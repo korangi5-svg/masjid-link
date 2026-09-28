@@ -12,8 +12,8 @@ export function isActivePath(pathname: string, href: string) {
 }
 
 export const contactInfo = {
-  email: 'salaam@connecttomasjid.com',
-  phone: '(416) 555-0100',
+  email: 'mohammad.arifkhan@outlook.com',
+  phone: '(416) 939-5525',
   address: 'Toronto, Ontario, Canada',
 }
 
