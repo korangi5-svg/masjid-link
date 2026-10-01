@@ -2,13 +2,18 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, CalendarDays, Check, MapPin, Navigation, Phone } from 'lucide-react'
+import { MasjidMap } from '@/components/masjids/masjid-map'
 import { PrayerTimesTable } from '@/components/masjids/prayer-times-table'
 import { getMasjidById } from '@/lib/services/masjids'
 import { getEvents, formatEventDate } from '@/lib/services/events'
+import { eventsEnabled } from '@/lib/features'
+import { directionsUrl } from '@/lib/geo'
 import { focusRing, primaryButton, secondaryButton } from '@/lib/site'
 import { cn } from '@/lib/utils'
 
 type Props = { params: Promise<{ id: string }> }
+
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
@@ -18,16 +23,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function MasjidDetailPage({ params }: Props) {
   const { id } = await params
-  const [masjid, events] = await Promise.all([getMasjidById(id), getEvents()])
+  const [masjid, events] = await Promise.all([getMasjidById(id), eventsEnabled ? getEvents() : []])
   if (!masjid) notFound()
 
   const upcoming = events.filter((e) => e.masjidId === masjid.id)
-  const fullAddress = `${masjid.address}, ${masjid.city}, ${masjid.province} ${masjid.postalCode}`
-  const directionsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${masjid.name} ${fullAddress}`)}`
+  const fullAddress = [masjid.address, masjid.city, masjid.province, masjid.postalCode].filter(Boolean).join(', ')
+  const directionsHref = directionsUrl(masjid.latitude, masjid.longitude)
+  const phoneDigits = masjid.phone?.replace(/\D/g, '') ?? ''
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <Link href="/masjids" className={cn('inline-flex items-center gap-1.5 rounded text-sm font-semibold text-teal hover:underline', focusRing)}>
+      <Link href="/masjids" className={cn('inline-flex items-center gap-1.5 rounded text-sm font-semibold text-teal-dark hover:underline', focusRing)}>
         <ArrowLeft className="size-4" aria-hidden="true" /> All masjids
       </Link>
 
@@ -43,9 +49,16 @@ export default async function MasjidDetailPage({ params }: Props) {
             <a href={directionsHref} target="_blank" rel="noopener noreferrer" className={primaryButton}>
               <Navigation className="size-4" aria-hidden="true" /> Get directions
             </a>
-            <a href={`tel:${masjid.phone.replace(/\D/g, '')}`} className={secondaryButton}>
-              <Phone className="size-4" aria-hidden="true" /> {masjid.phone}
-            </a>
+            {phoneDigits ? (
+              <a href={`tel:${phoneDigits}`} className={secondaryButton}>
+                <Phone className="size-4" aria-hidden="true" /> {masjid.phone}
+              </a>
+            ) : null}
+            {masjid.website ? (
+              <a href={masjid.website} target="_blank" rel="noopener noreferrer" className={secondaryButton}>
+                Visit website
+              </a>
+            ) : null}
           </div>
 
           <h2 className="mt-10 text-xl font-bold text-navy">Services</h2>
@@ -57,33 +70,34 @@ export default async function MasjidDetailPage({ params }: Props) {
             ))}
           </ul>
 
-          <h2 className="mt-10 text-xl font-bold text-navy">Upcoming events</h2>
           {upcoming.length ? (
-            <ul className="mt-4 flex flex-col gap-3">
-              {upcoming.map((e) => (
-                <li key={e.id}>
-                  <Link
-                    href={`/events/${e.id}`}
-                    className={cn('flex items-center gap-4 rounded-xl border border-border p-4 transition-colors hover:bg-surface', focusRing)}
-                  >
-                    <CalendarDays className="size-5 shrink-0 text-teal" aria-hidden="true" />
-                    <span>
-                      <span className="block font-semibold text-navy">{e.title}</span>
-                      <span className="block text-sm text-muted-foreground">
-                        {formatEventDate(e.date)} · {e.startTime}
+            <>
+              <h2 className="mt-10 text-xl font-bold text-navy">Upcoming events</h2>
+              <ul className="mt-4 flex flex-col gap-3">
+                {upcoming.map((e) => (
+                  <li key={e.id}>
+                    <Link
+                      href={`/events/${e.id}`}
+                      className={cn('flex items-center gap-4 rounded-xl border border-border p-4 transition-colors hover:bg-surface', focusRing)}
+                    >
+                      <CalendarDays className="size-5 shrink-0 text-teal" aria-hidden="true" />
+                      <span>
+                        <span className="block font-semibold text-navy">{e.title}</span>
+                        <span className="block text-sm text-muted-foreground">
+                          {formatEventDate(e.date)} · {e.startTime}
+                        </span>
                       </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 text-sm text-muted-foreground">No upcoming events listed for this masjid.</p>
-          )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
         </div>
 
         <aside>
           <PrayerTimesTable times={masjid.prayerTimes} />
+          <MasjidMap masjids={[masjid]} showLinks={false} className="mt-6 h-64" />
         </aside>
       </div>
     </div>

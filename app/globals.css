@@ -85,3 +85,34 @@
     }
   }
 }
+
+@layer components {
+  .masjid-map-pin {
+    background: none;
+    border: 0;
+  }
+  .masjid-map-origin {
+    display: block;
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: #1a73e8;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 6px rgb(26 115 232 / 0.25);
+  }
+  .masjid-map-popup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-family: var(--font-sans, inherit);
+    font-size: 0.8125rem;
+    color: var(--color-navy);
+  }
+  .masjid-map-popup strong {
+    font-size: 0.9375rem;
+  }
+  .masjid-map-popup a {
+    font-weight: 600;
+    color: var(--color-teal-dark);
+  }
+}

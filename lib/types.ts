@@ -5,6 +5,8 @@ export interface PrayerTimes {
   maghrib: string
   isha: string
   jumuah: string
+  /** IANA timezone the times are local to, e.g. "America/Toronto". */
+  timezone?: string
 }
 
 export interface Masjid {
@@ -14,8 +16,10 @@ export interface Masjid {
   city: string
   province: string
   postalCode: string
+  latitude: number
+  longitude: number
   distanceKm: number
-  phone: string
+  phone?: string
   website?: string
   description: string
   services: string[]

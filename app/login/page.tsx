@@ -18,7 +18,7 @@ export default function LoginPage() {
       footer={
         <>
           {"Don't have an account? "}
-          <Link href="/signup" className={cn('rounded font-semibold text-teal hover:underline', focusRing)}>
+          <Link href="/signup" className={cn('rounded font-semibold text-teal-dark hover:underline', focusRing)}>
             Sign up
           </Link>
         </>

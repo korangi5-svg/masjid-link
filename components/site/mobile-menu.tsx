@@ -52,7 +52,7 @@ export function MobileMenu({ pathname }: { pathname: string }) {
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'flex items-center border-l-4 px-4 py-3.5 text-base font-medium transition-colors',
-                    active ? 'border-teal bg-surface text-teal' : 'border-transparent text-navy hover:bg-surface',
+                    active ? 'border-teal bg-surface text-teal-dark' : 'border-transparent text-navy hover:bg-surface',
                     focusRing,
                   )}
                 >

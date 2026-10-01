@@ -1,3 +1,5 @@
+import { eventsEnabled } from '@/lib/features'
+
 export const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/masjids', label: 'Masjids' },
@@ -5,7 +7,7 @@ export const navLinks = [
   { href: '/resources', label: 'Resources' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
-] as const
+].filter((link) => eventsEnabled || link.href !== '/events')
 
 export function isActivePath(pathname: string, href: string) {
   return href === '/' ? pathname === '/' : pathname.startsWith(href)

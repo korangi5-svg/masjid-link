@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { UserRound } from 'lucide-react'
 import { Logo } from '@/components/site/logo'
 import { MobileMenu } from '@/components/site/mobile-menu'
+import { accountsEnabled } from '@/lib/features'
 import { focusRing, isActivePath, navLinks } from '@/lib/site'
 import { cn } from '@/lib/utils'
 
@@ -28,7 +29,7 @@ export function Header() {
                     className={cn(
                       'relative flex h-[105px] items-center px-3 text-[0.95rem] font-medium transition-colors',
                       'after:absolute after:inset-x-3 after:bottom-7 after:h-[3px] after:rounded-full after:transition-colors',
-                      active ? 'text-teal after:bg-teal' : 'text-navy hover:text-teal after:bg-transparent',
+                      active ? 'text-teal-dark after:bg-teal' : 'text-navy hover:text-teal after:bg-transparent',
                       focusRing,
                     )}
                   >
@@ -41,16 +42,18 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/login"
-            className={cn(
-              'inline-flex size-11 items-center justify-center gap-2 rounded-full bg-navy text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-blue sm:size-auto sm:px-5 sm:py-3',
-              focusRing,
-            )}
-          >
-            <UserRound className="size-4" aria-hidden="true" />
-            <span className="sr-only sm:not-sr-only">Login / Sign Up</span>
-          </Link>
+          {accountsEnabled ? (
+            <Link
+              href="/login"
+              className={cn(
+                'inline-flex size-11 items-center justify-center gap-2 rounded-full bg-navy text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-blue sm:size-auto sm:px-5 sm:py-3',
+                focusRing,
+              )}
+            >
+              <UserRound className="size-4" aria-hidden="true" />
+              <span className="sr-only sm:not-sr-only">Login / Sign Up</span>
+            </Link>
+          ) : null}
           <MobileMenu pathname={pathname} />
         </div>
       </div>

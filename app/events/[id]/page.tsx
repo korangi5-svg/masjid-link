@@ -29,7 +29,7 @@ export default async function EventDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
-      <Link href="/events" className={cn('inline-flex items-center gap-1.5 rounded text-sm font-semibold text-teal hover:underline', focusRing)}>
+      <Link href="/events" className={cn('inline-flex items-center gap-1.5 rounded text-sm font-semibold text-teal-dark hover:underline', focusRing)}>
         <ArrowLeft className="size-4" aria-hidden="true" /> All events
       </Link>
 

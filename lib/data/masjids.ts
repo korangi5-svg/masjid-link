@@ -8,6 +8,8 @@ export const mockMasjids: Masjid[] = [
     city: 'Toronto',
     province: 'Ontario',
     postalCode: 'M1R 2G6',
+    latitude: 43.7615,
+    longitude: -79.3122,
     distanceKm: 2.4,
     phone: '(416) 555-0141',
     description:
@@ -22,6 +24,8 @@ export const mockMasjids: Masjid[] = [
     city: 'Toronto',
     province: 'Ontario',
     postalCode: 'M4C 1K9',
+    latitude: 43.6874,
+    longitude: -79.3005,
     distanceKm: 4.1,
     phone: '(416) 555-0188',
     description:
@@ -36,6 +40,8 @@ export const mockMasjids: Masjid[] = [
     city: 'Toronto',
     province: 'Ontario',
     postalCode: 'M1S 5E1',
+    latitude: 43.8075,
+    longitude: -79.2536,
     distanceKm: 5.8,
     phone: '(416) 555-0102',
     description:
@@ -50,6 +56,8 @@ export const mockMasjids: Masjid[] = [
     city: 'Toronto',
     province: 'Ontario',
     postalCode: 'M5S 1M5',
+    latitude: 43.6696,
+    longitude: -79.3897,
     distanceKm: 7.3,
     phone: '(416) 555-0167',
     description:
@@ -64,6 +72,8 @@ export const mockMasjids: Masjid[] = [
     city: 'Mississauga',
     province: 'Ontario',
     postalCode: 'L5B 1N7',
+    latitude: 43.5762,
+    longitude: -79.6479,
     distanceKm: 12.6,
     phone: '(905) 555-0123',
     description:
@@ -78,6 +88,8 @@ export const mockMasjids: Masjid[] = [
     city: 'Markham',
     province: 'Ontario',
     postalCode: 'L3R 5M1',
+    latitude: 43.8561,
+    longitude: -79.337,
     distanceKm: 16.2,
     phone: '(905) 555-0190',
     description:
@@ -92,6 +104,8 @@ export const mockMasjids: Masjid[] = [
     city: 'Brampton',
     province: 'Ontario',
     postalCode: 'L6W 2B3',
+    latitude: 43.6856,
+    longitude: -79.7599,
     distanceKm: 24.9,
     phone: '(905) 555-0155',
     description:

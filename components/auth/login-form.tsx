@@ -63,7 +63,7 @@ export function LoginForm() {
           />
           Remember me
         </label>
-        <Link href="/forgot-password" className={cn('rounded text-sm font-semibold text-teal hover:underline', focusRing)}>
+        <Link href="/forgot-password" className={cn('rounded text-sm font-semibold text-teal-dark hover:underline', focusRing)}>
           Forgot password?
         </Link>
       </div>

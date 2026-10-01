@@ -32,8 +32,8 @@ export function Hero() {
             <span className="block text-mint">Stay Connected.</span>
           </h1>
           <p className="mt-5 max-w-[520px] text-pretty text-base leading-relaxed text-white/90 sm:text-lg">
-            A simple way to discover local mosques, join community events, and stay connected with your faith and
-            community.
+            Find masjids near any address or your current location, anywhere in the world, with today’s prayer times
+            for your area.
           </p>
           <LocationSearch />
         </div>
