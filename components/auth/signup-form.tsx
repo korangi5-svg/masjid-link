@@ -34,6 +34,7 @@ export function SignupForm() {
   const [errors, setErrors] = useState<FieldErrors<Field>>({})
   const [serverError, setServerError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [confirmEmail, setConfirmEmail] = useState('')
 
   const bind = (field: Field) => ({
     value: values[field],
@@ -59,8 +60,17 @@ export function SignupForm() {
       location: values.location.trim(),
     })
     setSubmitting(false)
-    if (result.ok) router.push('/')
-    else setServerError(result.error ?? 'Unable to create your account.')
+    if (!result.ok) setServerError(result.error ?? 'Unable to create your account.')
+    else if (result.data?.needsConfirmation) setConfirmEmail(values.email.trim())
+    else router.push('/')
+  }
+
+  if (confirmEmail) {
+    return (
+      <FormAlert tone="success">
+        Almost done — we sent a confirmation link to <strong>{confirmEmail}</strong>. Open it to activate your account, then log in.
+      </FormAlert>
+    )
   }
 
   return (
