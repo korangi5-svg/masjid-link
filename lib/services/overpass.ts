@@ -1,6 +1,8 @@
-import { cacheGetOrSet } from '@/lib/ttl-cache'
+import { after } from 'next/server'
+import { cacheGetOrSet, cacheSet } from '@/lib/ttl-cache'
 import { HttpError, fetchJson, fetchText } from '@/lib/services/http'
 import { haversineKm } from '@/lib/geo'
+import { boxId, circleBox, getOsmStore, snapBox, type Box } from '@/lib/services/osm-store'
 
 export type OsmElementType = 'node' | 'way' | 'relation'
 
@@ -31,6 +33,7 @@ interface OverpassElement {
 
 interface OverpassResponse {
   elements?: OverpassElement[]
+  remark?: string
 }
 
 interface NominatimSearchHit {
@@ -83,6 +86,10 @@ const NEARBY_TTL_MS = 1000 * 60 * 15
 // Fallback results are incomplete, so retry Overpass soon rather than serving them for long.
 const FALLBACK_TTL_MS = 1000 * 60 * 2
 const BY_ID_TTL_MS = 1000 * 60 * 60
+// Longest a search waits for Overpass before answering with quicker (partial) results.
+const OVERPASS_DEADLINE_MS = 5000
+const TIMED_OUT = Symbol('timed out')
+const FAILED = Symbol('failed')
 
 export function toMasjidId(type: OsmElementType, id: number) {
   return `osm-${type}-${id}`
@@ -95,39 +102,89 @@ export function parseMasjidId(id: string): { type: OsmElementType; osmId: number
 }
 
 export async function findMosquesNearby(lat: number, lng: number, radiusKm: number): Promise<OsmMasjid[]> {
-  const radiusMeters = Math.round(Math.min(Math.max(radiusKm, 1), 50) * 1000)
-  const key = `nearby:${lat.toFixed(3)}:${lng.toFixed(3)}:${radiusMeters}`
+  const radius = Math.min(Math.max(radiusKm, 1), 50)
+  const key = `nearby:${lat.toFixed(3)}:${lng.toFixed(3)}:${radius}`
   const result = await cacheGetOrSet(key, (r) => (r.complete ? NEARBY_TTL_MS : FALLBACK_TTL_MS), async () => {
-    const query = `
-[out:json][timeout:20];
-nwr["amenity"="place_of_worship"]["religion"="muslim"](around:${radiusMeters},${lat},${lng});
-out center tags;
-`.trim()
+    const nearest = (list: OsmMasjid[]) => ({
+      masjids: dedupe(list)
+        .map((m) => ({ m, km: haversineKm(lat, lng, m.lat, m.lng) }))
+        .filter(({ km }) => km <= radius)
+        .sort((x, y) => x.km - y.km)
+        .slice(0, 40)
+        .map(({ m }) => m),
+    })
 
-    let mapped: OsmMasjid[] = []
-    let complete = false
-    try {
-      const elements = await runOverpass(query)
-      mapped = elements.map(mapElement).filter((m): m is OsmMasjid => Boolean(m))
-      complete = true
-    } catch (error) {
-      console.error('[overpass] nearby query failed, using map search fallback:', error)
+    const area = circleBox(lat, lng, radius)
+    const store = getOsmStore()
+
+    // 1. Shared cache: areas fetched recently (or preloaded) answer straight from Supabase.
+    if (store) {
+      try {
+        if (await store.isCovered(area)) return { ...nearest(await store.query(area)), complete: true }
+      } catch (error) {
+        console.error('[overpass] shared cache read failed:', error)
+      }
     }
 
-    if (!mapped.length) {
-      mapped = await findMosquesFallback(lat, lng, radiusKm)
-    }
+    // 2. Overpass, snapped to a grid so neighbouring searches reuse the same fetched area.
+    const fetchArea = snapBox(area)
+    const full = fetchMosquesInBox(fetchArea).then(async (list) => {
+      if (store) await store.replaceArea(boxId(fetchArea), fetchArea, list).catch((e) => console.error('[overpass] cache write failed:', e))
+      return list
+    })
+    const first = await withDeadline(
+      full.catch((error): typeof FAILED => {
+        console.error('[overpass] nearby query failed:', error)
+        return FAILED
+      }),
+      OVERPASS_DEADLINE_MS,
+    )
+    if (first !== TIMED_OUT && first !== FAILED) return { ...nearest(first), complete: true }
 
-    const unique = dedupe(mapped)
-    unique.sort((a, b) => haversineKm(lat, lng, a.lat, a.lng) - haversineKm(lat, lng, b.lat, b.lng))
-    return { masjids: unique.slice(0, 40), complete }
+    // 3. Too slow or failed: answer now with quick results, and let Overpass finish in the background
+    //    so the shared cache is complete for the next search here.
+    // When it lands, the complete list replaces this partial answer in memory as well.
+    if (first === TIMED_OUT) {
+      after(
+        full.then(
+          (list) => cacheSet(key, { ...nearest(list), complete: true }, NEARBY_TTL_MS),
+          () => undefined,
+        ),
+      )
+    }
+    const [quick, stored] = await Promise.all([
+      findMosquesFallback(lat, lng, radius),
+      store ? store.query(area).catch(() => []) : Promise.resolve([]),
+    ])
+    return { ...nearest([...stored, ...quick]), complete: false }
   })
   return result.masjids
+}
+
+/** Every masjid inside a box, straight from Overpass. Used for searches and for preloading regions. */
+export async function fetchMosquesInBox(box: Box, { timeoutSec = 25 } = {}): Promise<OsmMasjid[]> {
+  const query = `
+[out:json][timeout:${timeoutSec}];
+nwr["amenity"="place_of_worship"]["religion"="muslim"](${box.south},${box.west},${box.north},${box.east});
+out center tags;
+`.trim()
+  const elements = await runOverpass(query, (timeoutSec + 10) * 1000)
+  return elements.map(mapElement).filter((m): m is OsmMasjid => Boolean(m))
+}
+
+function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T | typeof TIMED_OUT> {
+  let timer: ReturnType<typeof setTimeout>
+  const deadline = new Promise<typeof TIMED_OUT>((resolve) => {
+    timer = setTimeout(() => resolve(TIMED_OUT), ms)
+  })
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer))
 }
 
 export async function getMosqueByOsmId(type: OsmElementType, osmId: number): Promise<OsmMasjid | null> {
   const key = `osm:${type}:${osmId}`
   return cacheGetOrSet(key, BY_ID_TTL_MS, async () => {
+    const stored = await getOsmStore()?.getById(type, osmId).catch(() => null)
+    if (stored) return stored
     try {
       const query = `
 [out:json][timeout:20];
@@ -144,10 +201,10 @@ out center tags;
   })
 }
 
-async function runOverpass(query: string): Promise<OverpassElement[]> {
+async function runOverpass(query: string, timeoutMs = 25000): Promise<OverpassElement[]> {
   // Public Overpass mirrors are often overloaded; race them and take the first good answer.
   try {
-    const json = await Promise.any(OVERPASS_ENDPOINTS.map((endpoint) => postOverpass(endpoint, query)))
+    const json = await Promise.any(OVERPASS_ENDPOINTS.map((endpoint) => postOverpass(endpoint, query, timeoutMs)))
     return json.elements ?? []
   } catch (error) {
     const first = error instanceof AggregateError ? error.errors[0] : error
@@ -156,15 +213,19 @@ async function runOverpass(query: string): Promise<OverpassElement[]> {
   }
 }
 
-async function postOverpass(endpoint: string, query: string): Promise<OverpassResponse> {
+async function postOverpass(endpoint: string, query: string, timeoutMs: number): Promise<OverpassResponse> {
   const text = await fetchText(endpoint, {
     method: 'POST',
-    timeoutMs: 25000,
+    timeoutMs,
     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
     body: `data=${encodeURIComponent(query)}`,
   })
   if (text.trimStart().startsWith('<')) throw new HttpError('Overpass returned an error page')
-  return JSON.parse(text) as OverpassResponse
+  const json = JSON.parse(text) as OverpassResponse
+  // A query that runs out of time or memory returns a partial list plus a remark. Treat it as a failure:
+  // saving it as complete would delete the missing masjids from the shared cache.
+  if (json.remark && /error|timed out|out of memory/i.test(json.remark)) throw new HttpError(`Overpass: ${json.remark}`)
+  return json
 }
 
 async function findMosquesFallback(lat: number, lng: number, radiusKm: number): Promise<OsmMasjid[]> {
@@ -302,7 +363,11 @@ function mapElement(el: OverpassElement): OsmMasjid | null {
 
 function dedupe(masjids: OsmMasjid[]) {
   const seen = new Set<string>()
+  const byId = new Set<string>()
   return masjids.filter((m) => {
+    const id = `${m.osmType}:${m.osmId}`
+    if (byId.has(id)) return false
+    byId.add(id)
     const key = `${m.name.toLowerCase()}|${m.lat.toFixed(4)}|${m.lng.toFixed(4)}`
     if (seen.has(key)) return false
     seen.add(key)

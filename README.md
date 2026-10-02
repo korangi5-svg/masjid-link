@@ -41,6 +41,24 @@ Accounts, events, the contact form and curated listings use [Supabase](https://s
    (**Settings → Environment Variables**) and to `.env.local` for local development, then redeploy.
 
 Once those variables are set, the login button, events and community features appear automatically.
+
+### Fast masjid search (shared cache)
+
+Searches normally depend on the public OpenStreetMap (Overpass) servers, which are often slow. With a secret key
+the server saves results in Supabase, so any area searched before (by anyone) loads in well under a second:
+
+1. Run [`supabase/migrations/20261002000000_osm_cache.sql`](supabase/migrations/20261002000000_osm_cache.sql) in the SQL Editor.
+2. In Vercel add `SUPABASE_SECRET_KEY` (Project Settings → API Keys → secret key) and `CRON_SECRET`
+   (any long random string), both marked **Sensitive**, then redeploy.
+3. Preload Canada, the US and the UK once (takes a few minutes): put the same two values plus
+   `NEXT_PUBLIC_SUPABASE_URL` in `.env.local`, then run `pnpm preload:masjids`.
+   Rerun a single region if it fails, e.g. `pnpm preload:masjids us-east`.
+
+A daily Vercel cron job ([`/api/cron/refresh-masjids`](app/api/cron/refresh-masjids/route.ts)) re-imports the
+stalest region, so each one is refreshed about weekly. You can also trigger it from Vercel → Settings → Cron Jobs.
+
+Without the secret key, searches still never wait more than ~5 seconds: if Overpass is slow the site answers
+with quicker partial results and completes the search in the background.
 Contact messages are visible in the dashboard under **Table Editor → contact_messages**.
 
 ## Learn More
