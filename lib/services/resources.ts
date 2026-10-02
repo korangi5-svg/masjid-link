@@ -1,18 +1,16 @@
-import { collection, getDocs } from 'firebase/firestore'
 import { mockResources } from '@/lib/data/resources'
-import { getDb } from '@/lib/firebase'
+import { getSupabase } from '@/lib/supabase'
 import type { ResourceCategory } from '@/lib/types'
 
+// Resources are curated links, so the built-in list stays as the fallback until the table has rows.
 export async function getResourceCategories(): Promise<ResourceCategory[]> {
-  const db = getDb()
-  if (!db) return mockResources
+  const supabase = getSupabase()
+  if (!supabase) return mockResources
 
-  try {
-    const snapshot = await getDocs(collection(db, 'resources'))
-    const remote = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as ResourceCategory)
-    return remote.length ? remote : mockResources
-  } catch (error) {
-    console.error('[resources] Firestore read failed, using mock data:', error)
+  const { data, error } = await supabase.from('resource_categories').select('id, title, description, links').order('sort_order')
+  if (error) {
+    console.error('[resources] Supabase read failed, using built-in list:', error.message)
     return mockResources
   }
+  return data.length ? (data as ResourceCategory[]) : mockResources
 }

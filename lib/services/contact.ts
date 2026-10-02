@@ -1,18 +1,16 @@
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
-import { getDb } from '@/lib/firebase'
+import { contactInfo } from '@/lib/site'
+import { getSupabase } from '@/lib/supabase'
 import type { ContactMessage, ServiceResult } from '@/lib/types'
 
 export async function submitContactMessage(message: ContactMessage): Promise<ServiceResult> {
-  const db = getDb()
-  if (!db) {
-    await new Promise((resolve) => setTimeout(resolve, 600))
-    return { ok: true }
-  }
-  try {
-    await addDoc(collection(db, 'contactMessages'), { ...message, createdAt: serverTimestamp() })
-    return { ok: true }
-  } catch (error) {
-    console.error('[contact] Failed to save message:', error)
+  const supabase = getSupabase()
+  // Never pretend a message was sent when there is nowhere to store it.
+  if (!supabase) return { ok: false, error: `The contact form isn't connected yet. Please email us at ${contactInfo.email}.` }
+
+  const { error } = await supabase.from('contact_messages').insert(message)
+  if (error) {
+    console.error('[contact] Failed to save message:', error.message)
     return { ok: false, error: 'We could not send your message. Please try again.' }
   }
+  return { ok: true }
 }

@@ -1,38 +1,55 @@
-import { collection, doc, getDoc, getDocs } from 'firebase/firestore'
 import { mockEvents } from '@/lib/data/events'
-import { getDb } from '@/lib/firebase'
+import { getSupabase } from '@/lib/supabase'
 import type { CommunityEvent } from '@/lib/types'
 
-const COLLECTION = 'events'
+interface EventRow {
+  id: string
+  title: string
+  category: CommunityEvent['category']
+  date: string
+  start_time: string
+  end_time: string
+  location: string
+  masjid_id: string
+  description: string
+  details: string
+}
 
-export async function getEvents(): Promise<CommunityEvent[]> {
-  const db = getDb()
-  let events = mockEvents
-
-  if (db) {
-    try {
-      const snapshot = await getDocs(collection(db, COLLECTION))
-      const remote = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as CommunityEvent)
-      if (remote.length) events = remote
-    } catch (error) {
-      console.error('[events] Firestore read failed, using mock data:', error)
-    }
+function toEvent(row: EventRow): CommunityEvent {
+  return {
+    id: row.id,
+    title: row.title,
+    category: row.category,
+    date: row.date,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    location: row.location,
+    masjidId: row.masjid_id,
+    description: row.description,
+    details: row.details,
   }
+}
 
-  return [...events].sort((a, b) => a.date.localeCompare(b.date))
+// With Supabase connected, its events are the source of truth (even when empty); sample data is only for unconfigured previews.
+export async function getEvents(): Promise<CommunityEvent[]> {
+  const supabase = getSupabase()
+  if (!supabase) return [...mockEvents].sort((a, b) => a.date.localeCompare(b.date))
+
+  const { data, error } = await supabase.from('events').select('*').order('date')
+  if (error) {
+    console.error('[events] Supabase read failed:', error.message)
+    return []
+  }
+  return (data as EventRow[]).map(toEvent)
 }
 
 export async function getEventById(id: string): Promise<CommunityEvent | null> {
-  const db = getDb()
-  if (db) {
-    try {
-      const snapshot = await getDoc(doc(db, COLLECTION, id))
-      if (snapshot.exists()) return { id: snapshot.id, ...snapshot.data() } as CommunityEvent
-    } catch (error) {
-      console.error('[events] Firestore read failed, using mock data:', error)
-    }
-  }
-  return mockEvents.find((e) => e.id === id) ?? null
+  const supabase = getSupabase()
+  if (!supabase) return mockEvents.find((e) => e.id === id) ?? null
+
+  const { data, error } = await supabase.from('events').select('*').eq('id', id).maybeSingle()
+  if (error) console.error('[events] Supabase read failed:', error.message)
+  return data ? toEvent(data as EventRow) : null
 }
 
 export { formatEventDate } from '@/lib/services/event-format'

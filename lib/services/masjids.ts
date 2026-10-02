@@ -1,6 +1,5 @@
-import { doc, getDoc } from 'firebase/firestore'
 import { mockMasjids } from '@/lib/data/masjids'
-import { getDb } from '@/lib/firebase'
+import { getSupabase } from '@/lib/supabase'
 import { haversineKm, isValidCoord, roundKm } from '@/lib/geo'
 import { geocodeLocation } from '@/lib/services/geocoding'
 import { findMosquesNearby, getMosqueByOsmId, parseMasjidId, toMasjidId, type OsmMasjid } from '@/lib/services/overpass'
@@ -64,17 +63,50 @@ export async function getMasjidById(id: string, origin?: { lat: number; lng: num
     return toMasjid(mosque, from.lat, from.lng, prayerTimes)
   }
 
-  const db = getDb()
-  if (db) {
-    try {
-      const snapshot = await getDoc(doc(db, 'masjids', id))
-      if (snapshot.exists()) return { id: snapshot.id, ...snapshot.data() } as Masjid
-    } catch (error) {
-      console.error('[masjids] Firestore read failed:', error)
-    }
+  // Curated listings (not from OpenStreetMap) live in the masjids table.
+  const supabase = getSupabase()
+  if (supabase) {
+    const { data, error } = await supabase.from('masjids').select('*').eq('id', id).maybeSingle()
+    if (error) console.error('[masjids] Supabase read failed:', error.message)
+    if (data) return fromRow(data as MasjidRow)
   }
 
   return mockMasjids.find((m) => m.id === id) ?? null
+}
+
+interface MasjidRow {
+  id: string
+  name: string
+  address: string
+  city: string
+  province: string
+  postal_code: string
+  latitude: number
+  longitude: number
+  phone: string | null
+  website: string | null
+  description: string
+  services: string[]
+  prayer_times: PrayerTimes
+}
+
+function fromRow(row: MasjidRow): Masjid {
+  return {
+    id: row.id,
+    name: row.name,
+    address: row.address,
+    city: row.city,
+    province: row.province,
+    postalCode: row.postal_code,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    distanceKm: 0,
+    phone: row.phone ?? undefined,
+    website: row.website ?? undefined,
+    description: row.description,
+    services: row.services,
+    prayerTimes: row.prayer_times,
+  }
 }
 
 async function resolveOrigin(location?: string, lat?: number, lng?: number) {
