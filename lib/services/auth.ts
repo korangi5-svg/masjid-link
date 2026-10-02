@@ -44,7 +44,7 @@ export async function signUp({ fullName, email, password, location }: SignUpInpu
     password,
     options: {
       data: { full_name: fullName, location },
-      emailRedirectTo: `${window.location.origin}/login`,
+      emailRedirectTo: `${window.location.origin}/`,
     },
   })
   if (error) return { ok: false, error: toMessage(error) }
@@ -65,4 +65,11 @@ export async function updatePassword(password: string): Promise<ServiceResult> {
   if (!supabase) return { ok: false, error: NOT_CONFIGURED }
   const { error } = await supabase.auth.updateUser({ password })
   return error ? { ok: false, error: toMessage(error) } : { ok: true }
+}
+
+export async function signOut(): Promise<ServiceResult> {
+  const supabase = getSupabase()
+  if (!supabase) return { ok: true }
+  const { error } = await supabase.auth.signOut()
+  return error ? { ok: false, error: 'Could not log out. Please try again.' } : { ok: true }
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { UserRound } from 'lucide-react'
+import { AccountMenu } from '@/components/auth/account-menu'
 import { Logo } from '@/components/site/logo'
 import { MobileMenu } from '@/components/site/mobile-menu'
 import { accountsEnabled } from '@/lib/features'
@@ -42,18 +42,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {accountsEnabled ? (
-            <Link
-              href="/login"
-              className={cn(
-                'inline-flex size-11 items-center justify-center gap-2 rounded-full bg-navy text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-blue sm:size-auto sm:px-5 sm:py-3',
-                focusRing,
-              )}
-            >
-              <UserRound className="size-4" aria-hidden="true" />
-              <span className="sr-only sm:not-sr-only">Login / Sign Up</span>
-            </Link>
-          ) : null}
+          {accountsEnabled ? <AccountMenu /> : null}
           <MobileMenu pathname={pathname} />
         </div>
       </div>
