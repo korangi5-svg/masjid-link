@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { AuthShell } from '@/components/auth/auth-shell'
+import { SignedInRedirect } from '@/components/auth/signed-in-redirect'
 import { SignupForm } from '@/components/auth/signup-form'
 import { focusRing } from '@/lib/site'
 import { cn } from '@/lib/utils'
@@ -24,6 +25,7 @@ export default function SignupPage() {
         </>
       }
     >
+      <SignedInRedirect />
       <SignupForm />
     </AuthShell>
   )
