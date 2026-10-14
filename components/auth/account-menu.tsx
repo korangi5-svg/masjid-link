@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useId, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogOut, UserRound } from 'lucide-react'
+import { CircleUserRound, LogOut, UserRound } from 'lucide-react'
 import { useAuth } from '@/components/auth/auth-provider'
 import { signOut } from '@/lib/services/auth'
 import { focusRing } from '@/lib/site'
@@ -79,6 +79,13 @@ export function AccountMenu() {
           <span className="block text-muted-foreground">Signed in as</span>
           <span className="block truncate font-semibold text-navy">{user.email}</span>
         </p>
+        <Link
+          href="/account"
+          onClick={() => setOpen(false)}
+          className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-navy hover:bg-surface', focusRing)}
+        >
+          <CircleUserRound className="size-4" aria-hidden="true" /> My account
+        </Link>
         <button
           type="button"
           onClick={handleSignOut}

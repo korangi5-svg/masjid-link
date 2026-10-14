@@ -73,3 +73,38 @@ export async function signOut(): Promise<ServiceResult> {
   const { error } = await supabase.auth.signOut()
   return error ? { ok: false, error: 'Could not log out. Please try again.' } : { ok: true }
 }
+
+export interface Profile {
+  fullName: string
+  location: string
+}
+
+/** The signed-in user's profile row, falling back to their sign-up details if the row can't be read. */
+export async function getProfile(): Promise<ServiceResult<Profile>> {
+  const supabase = getSupabase()
+  if (!supabase) return { ok: false, error: NOT_CONFIGURED }
+  const { data: userData } = await supabase.auth.getUser()
+  const user = userData.user
+  if (!user) return { ok: false, error: 'Please log in again.' }
+  const { data } = await supabase.from('profiles').select('full_name, location').eq('id', user.id).maybeSingle()
+  return {
+    ok: true,
+    data: {
+      fullName: data?.full_name ?? (user.user_metadata?.full_name as string | undefined) ?? '',
+      location: data?.location ?? (user.user_metadata?.location as string | undefined) ?? '',
+    },
+  }
+}
+
+export async function updateProfile({ fullName, location }: Profile): Promise<ServiceResult> {
+  const supabase = getSupabase()
+  if (!supabase) return { ok: false, error: NOT_CONFIGURED }
+  const { data: userData } = await supabase.auth.getUser()
+  const user = userData.user
+  if (!user) return { ok: false, error: 'Please log in again.' }
+  const { error } = await supabase.from('profiles').update({ full_name: fullName, location }).eq('id', user.id)
+  if (error) return { ok: false, error: 'Could not save your profile. Please try again.' }
+  // Keep the sign-in metadata in step so the header shows the new name straight away.
+  const { error: metaError } = await supabase.auth.updateUser({ data: { full_name: fullName, location } })
+  return metaError ? { ok: false, error: toMessage(metaError) } : { ok: true }
+}

@@ -30,7 +30,7 @@ export function LoginForm() {
     setSubmitting(true)
     const result = await signIn(email.trim(), password, remember)
     setSubmitting(false)
-    if (result.ok) router.push('/')
+    if (result.ok) router.push('/account')
     else setServerError(result.error ?? 'Unable to log in.')
   }
 
