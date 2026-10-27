@@ -33,7 +33,7 @@ export function YourArea() {
   return (
     <section aria-label="Your area" className="border-b border-border bg-surface">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 sm:px-6 lg:px-8">
-        {times ? <NextPrayerBar times={times} place={area.label} /> : null}
+        {times ? <NextPrayerBar times={times} coords={area} place={area.label} /> : null}
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
           <Link href={href} className={cn('inline-flex items-center gap-1 rounded font-semibold text-teal-dark hover:underline', focusRing)}>
             Masjids near {area.label} <ArrowRight className="size-4" aria-hidden="true" />

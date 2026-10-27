@@ -224,7 +224,7 @@ export function MasjidDirectory({
 
       {status === 'done' && masjids.length ? (
         <>
-          {prayerTimes ? <NextPrayerBar times={prayerTimes} place={place} className="mt-4" /> : null}
+          {prayerTimes ? <NextPrayerBar times={prayerTimes} coords={origin ?? coords ?? undefined} place={place} className="mt-4" /> : null}
           <MasjidMap masjids={masjids} origin={origin} className="mt-4 h-80 sm:h-[28rem]" />
           <ul className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {masjids.map((m) => (

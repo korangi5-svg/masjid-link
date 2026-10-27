@@ -5,6 +5,7 @@ import { Clock } from 'lucide-react'
 import { DAILY_PRAYERS, formatCountdown, getNextPrayer } from '@/lib/prayer'
 import { cn } from '@/lib/utils'
 import type { PrayerTimes } from '@/lib/types'
+import { AdhanControl } from './adhan-control'
 
 /** Re-renders every 30s so the countdown stays current. Renders nothing until mounted to avoid clock mismatches with the server. */
 export function useNow(intervalMs = 30_000) {
@@ -22,11 +23,13 @@ export function NextPrayerBar({
   place,
   tone = 'light',
   className,
+  coords,
 }: {
   times: PrayerTimes
   place?: string
   tone?: 'light' | 'dark'
   className?: string
+  coords?: { lat: number; lng: number }
 }) {
   const now = useNow()
   const next = now ? getNextPrayer(times, now) : null
@@ -35,7 +38,7 @@ export function NextPrayerBar({
   const dark = tone === 'dark'
 
   return (
-    <div
+    <div><div
       className={cn(
         'flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5',
         dark ? 'bg-white/10 text-white ring-1 ring-white/15' : 'border border-border bg-white',
@@ -86,6 +89,6 @@ export function NextPrayerBar({
           )
         })}
       </ol>
-    </div>
+    </div><AdhanControl times={times} coords={coords} /></div>
   )
 }

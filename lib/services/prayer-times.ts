@@ -31,6 +31,7 @@ export async function getPrayerTimes(lat: number, lng: number): Promise<PrayerTi
       throw new Error('Incomplete prayer times')
     }
     return {
+      date: new Intl.DateTimeFormat('en-CA', { timeZone: body.data?.meta?.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()),
       fajr: to12h(t.Fajr),
       dhuhr: to12h(t.Dhuhr),
       asr: to12h(t.Asr),
