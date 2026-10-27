@@ -14,7 +14,7 @@ export function isActivePath(pathname: string, href: string) {
 }
 
 export const contactInfo = {
-  email: 'mohammad.arifkhan@outlook.com',
+  email: 'mohammad.arifkhan10@outlook.com',
   phone: '(416) 939-5525',
   address: 'Toronto, Ontario, Canada',
 }
