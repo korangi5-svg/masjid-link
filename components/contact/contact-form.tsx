@@ -53,7 +53,7 @@ export function ContactForm() {
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
       <h2 className="text-xl font-bold text-navy">Send a message</h2>
       {status === 'success' && (
-        <FormAlert tone="success">{"JazakAllahu khayran! Your message has been sent. We'll be in touch soon."}</FormAlert>
+        <FormAlert tone="success">{"JazakAllahu khayran! Your message has been accepted for email delivery. We'll be in touch soon."}</FormAlert>
       )}
       {status === 'error' && <FormAlert tone="error">{serverError}</FormAlert>}
 
