@@ -1,6 +1,7 @@
 import type { AuthError } from '@supabase/supabase-js'
 import { getSupabase, setRememberSession } from '@/lib/supabase'
 import type { ServiceResult } from '@/lib/types'
+import { parseInterests, type Interest } from '@/lib/interests'
 
 const NOT_CONFIGURED = 'Accounts are not available yet. They will be enabled once the database is connected.'
 
@@ -31,19 +32,22 @@ export interface SignUpInput {
   email: string
   password: string
   location: string
+  interests: Interest[]
 }
 
 /** needsConfirmation is true when the project requires email confirmation before first sign-in. */
-export async function signUp({ fullName, email, password, location }: SignUpInput): Promise<ServiceResult<{ needsConfirmation: boolean }>> {
+export async function signUp({ fullName, email, password, location, interests }: SignUpInput): Promise<ServiceResult<{ needsConfirmation: boolean }>> {
   const supabase = getSupabase()
   if (!supabase) return { ok: false, error: NOT_CONFIGURED }
+  const selected = parseInterests(interests)
+  if (!selected.length) return { ok: false, error: 'Please choose at least one interest.' }
   setRememberSession(true)
   // Profile fields travel as user metadata; a database trigger copies them into public.profiles.
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { full_name: fullName, location },
+      data: { full_name: fullName, location, interests: selected, onboarding_completed: true },
       emailRedirectTo: `${window.location.origin}/`,
     },
   })
@@ -108,3 +112,4 @@ export async function updateProfile({ fullName, location }: Profile): Promise<Se
   const { error: metaError } = await supabase.auth.updateUser({ data: { full_name: fullName, location } })
   return metaError ? { ok: false, error: toMessage(metaError) } : { ok: true }
 }
+

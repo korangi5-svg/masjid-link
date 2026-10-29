@@ -63,8 +63,26 @@ Contact messages are visible in the dashboard under **Table Editor → contact_m
 
 ## Learn More
 
+## Personalized onboarding
+
+Signup collects account details, then asks members to choose Quran, Tafsir, Islamic History,
+Parenting, New Muslims, and/or Youth. At least one interest is required before account creation.
+Supabase saves the choices in the signed-in user's Auth metadata (`interests` and
+`onboarding_completed`); the existing signup trigger creates their public profile.
+Email confirmation remains enabled according to the project's authentication settings.
+No database migration or additional secret is required for this feature.
+
+After login or signup confirmation, `/dashboard` shows curated resources matched to saved
+interests. Members without completed preferences go to `/onboarding`, which is also available
+from My Account and the dashboard to edit interests. Preferences sync across devices through
+Supabase Auth, not browser-local storage. Recommendation tags and content live in
+`lib/recommendations.ts`. Recommendations use topic matches, without collecting browsing history.
+
+Run the onboarding tests with Node 24+: `node --test tests/onboarding.test.mjs`.
+
 To learn more, take a look at the following resources:
 
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 - [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
+

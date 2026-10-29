@@ -57,6 +57,10 @@ export function AccountPage() {
       <Section title="Profile">
         <ProfileForm key={user.id} />
       </Section>
+      <Section title="Your learning interests">
+        <p className="mb-4 text-sm text-muted-foreground">Choose topics to personalize your learning feed.</p>
+        <div className="flex flex-wrap gap-3"><Link href="/onboarding" className={secondaryButton}>Edit interests</Link><Link href="/dashboard" className={primaryButton}>My dashboard</Link></div>
+      </Section>
       <Section title="Change password">
         <PasswordForm />
       </Section>
@@ -195,3 +199,4 @@ function PasswordForm() {
     </form>
   )
 }
+

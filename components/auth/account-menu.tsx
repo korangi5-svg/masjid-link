@@ -80,6 +80,13 @@ export function AccountMenu() {
           <span className="block truncate font-semibold text-navy">{user.email}</span>
         </p>
         <Link
+          href="/dashboard"
+          onClick={() => setOpen(false)}
+          className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-navy hover:bg-surface', focusRing)}
+        >
+          <CircleUserRound className="size-4" aria-hidden="true" /> My dashboard
+        </Link>
+        <Link
           href="/account"
           onClick={() => setOpen(false)}
           className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-navy hover:bg-surface', focusRing)}
@@ -97,3 +104,4 @@ export function AccountMenu() {
     </div>
   )
 }
+

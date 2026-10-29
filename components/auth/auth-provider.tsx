@@ -43,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState({ user: data.session?.user ?? null, loading: false })
       if (data.session && linkParams.get('type') === 'signup') {
         setNotice({ tone: 'success', text: 'Your email is confirmed and you’re now logged in. Welcome!' })
+        router.replace('/dashboard')
       }
     })
 
@@ -92,3 +93,4 @@ function AuthNotice({ notice, onDismiss }: { notice: Notice; onDismiss: () => vo
     </div>
   )
 }
+
