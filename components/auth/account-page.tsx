@@ -58,7 +58,7 @@ export function AccountPage() {
         <ProfileForm key={user.id} />
       </Section>
       <Section title="Your learning interests">
-        <p className="mb-4 text-sm text-muted-foreground">Choose topics to personalize your learning feed.</p>
+        <p className="mb-4 text-sm text-muted-foreground">Choose topics to personalize your learning feed. Manage activity personalization and scholar follows from your dashboard.</p>
         <div className="flex flex-wrap gap-3"><Link href="/onboarding" className={secondaryButton}>Edit interests</Link><Link href="/dashboard" className={primaryButton}>My dashboard</Link></div>
       </Section>
       <Section title="Change password">

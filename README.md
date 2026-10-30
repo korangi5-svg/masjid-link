@@ -80,6 +80,33 @@ Supabase Auth, not browser-local storage. Recommendation tags and content live i
 
 Run the onboarding tests with Node 24+: `node --test tests/onboarding.test.mjs`.
 
+### Adaptive learning recommendations
+
+`/learn` offers searchable lectures, articles, courses, and podcasts. `/dashboard` ranks each
+format using onboarding interests, completed content, followed scholars, and searched topics.
+Members explicitly enable activity personalization before any history is collected. Clicking an
+external resource does not count as reading or watching: members use Mark read/watched/listened/
+completed after using the publisher's site. A paused feed uses only onboarding interests.
+
+The engine is content-based ranking, not a trained collaborative model or a generative Islamic
+advice system. It never invents content, religious answers, scholar attribution, or destination URLs.
+Sources and scholar mappings are curated in `lib/recommendations.ts`.
+
+Activity is stored in `recommendation_activity` in each member's Supabase Auth metadata. All
+writes verify the active account; browser writes are queued to avoid lost updates from rapid
+actions. No new secrets or database migrations are required. This bounded first version is
+appropriate for the small catalogue: concurrent updates from separate devices use last-write-wins.
+A larger catalogue should move events to an account-scoped table with row-level security.
+
+At most 32 completion records and 12 topic-search records influence ranking. Events older than
+180 days are ignored and removed on the next activity write; raw search text is never saved.
+Completed items are hidden from the recommendation rows, but remain in the library for review
+or undo. Members can pause collection or clear history and follows without deleting interests.
+Recent history decays with a 30-day half-life; repeat completions/searches cannot stack duplicate
+weights. The engine adds cold-start and discovery items and explains each recommendation.
+
+Run `node --test tests/onboarding.test.mjs tests/recommendations.test.mjs` (Node 24+).
+
 To learn more, take a look at the following resources:
 
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
