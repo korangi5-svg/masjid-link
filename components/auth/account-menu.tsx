@@ -93,6 +93,8 @@ export function AccountMenu() {
         >
           <CircleUserRound className="size-4" aria-hidden="true" /> My account
         </Link>
+        <Link href="/scholars" onClick={() => setOpen(false)} className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-navy hover:bg-surface', focusRing)}>Followed scholars</Link>
+        <Link href="/notifications" onClick={() => setOpen(false)} className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-navy hover:bg-surface', focusRing)}>Notifications & weekly digest</Link>
         <button
           type="button"
           onClick={handleSignOut}

@@ -8,6 +8,7 @@ import { MobileMenu } from '@/components/site/mobile-menu'
 import { accountsEnabled } from '@/lib/features'
 import { focusRing, isActivePath, navLinks } from '@/lib/site'
 import { cn } from '@/lib/utils'
+import { NotificationLink } from '@/components/learning/notification-link'
 
 export function Header() {
   const pathname = usePathname()
@@ -42,6 +43,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {accountsEnabled ? <NotificationLink /> : null}
           {accountsEnabled ? <AccountMenu /> : null}
           <MobileMenu pathname={pathname} />
         </div>
@@ -49,3 +51,4 @@ export function Header() {
     </header>
   )
 }
+

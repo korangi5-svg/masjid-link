@@ -10,6 +10,8 @@ export interface LearningResource {
   interests: Interest[]
   kind?: 'article' | 'lecture' | 'course' | 'podcast'
   scholarIds?: string[]
+  /** Date this item was first published to Masjid Link; omit for undated legacy resources. */
+  publishedAt?: string
 }
 
 /** Curated content only; interest matching never changes a destination URL. */

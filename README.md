@@ -107,6 +107,44 @@ weights. The engine adds cold-start and discovery items and explains each recomm
 
 Run `node --test tests/onboarding.test.mjs tests/recommendations.test.mjs` (Node 24+).
 
+### Scholar follows, notifications, and weekly digests
+
+`/scholars` lists the existing curated scholars, their resources, and similar scholars with
+shared topic explanations. Follows reuse `recommendation_activity` and the existing activity
+personalization consent. `/notifications` shows new content, unread state, digest preview,
+and separate in-app/email preferences. The header bell and account menu link to these pages.
+Preferences and follow timestamps live in `scholar_notifications` in Supabase Auth metadata;
+no new migration is needed. Clearing follows stops future updates. Unfollow/refollow starts
+a new notification baseline; legacy follows receive content only after this feature's launch.
+
+To publish new scholar content, add a unique item to `contentCatalog` in
+`lib/recommendations.ts` with its real `scholarIds`, curated HTTPS `href`, and a fixed ISO
+`publishedAt` date representing first publication **to this platform**, then deploy. Do not
+change its ID/date to re-notify users. Legacy undated resources never produce new-upload
+alerts. This integration does not scrape or monitor external publisher uploads. In-app
+notifications appear on a page load/navigation after deployment, without browser push.
+The current catalogue is source-controlled; an upload/CMS integration can call the same
+selection logic when that publishing system is introduced.
+
+Weekly digest cron: `/api/cron/scholar-digest`, Friday 13:00 UTC (9 a.m. Toronto daylight time,
+8 a.m. standard time), configured in `vercel.json`. Server-only requirements:
+`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY` (or `SUPABASE_SERVICE_ROLE_KEY`),
+`CRON_SECRET`, `RESEND_API_KEY`, and **`SCHOLAR_FROM_EMAIL`** on a verified Resend domain.
+The Resend test sender is intentionally not used for member newsletters. The UI disables
+new email subscriptions until these values are configured and always allows unsubscribing.
+Each member must opt in and confirm their own account email. Empty digests are skipped.
+Only platform content published after follow/opt-in and within seven days is included.
+
+The server paginates members, rechecks subscription before sending, and records accepted
+delivery weeks in server-owned `app_metadata.scholar_digest_week`. A per-member/week Resend
+idempotency key protects overlapping requests/retries for the provider's 24-hour window.
+Provider acceptance is not proof of inbox delivery. If email succeeds but metadata persistence
+fails, investigate within 24 hours before retrying; later retries could duplicate a digest.
+Runs exceeding the five-minute processing window return an error and can resume by retrying
+within that same week. Move to a database outbox/worker for larger subscriber volumes.
+
+Run all checks: `node --test tests/onboarding.test.mjs tests/recommendations.test.mjs tests/scholar-follow.test.mjs`.
+
 To learn more, take a look at the following resources:
 
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
