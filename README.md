@@ -151,3 +151,11 @@ To learn more, take a look at the following resources:
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 - [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
 
+# Daily Islamic learning
+
+Visit `/daily-learning` for the public five-part lesson, linked from the homepage and navigation. Signed-in members receive an in-app reminder on `/dashboard` and `/notifications`, can mark the day complete, and can opt into daily email to their verified account address. Parenting and New Muslims interests adapt the practical action. The initial seven-day practice cycle deliberately revisits a small, sourced scripture collection; expand `lib/daily-learning.ts` to add reviewed content. It does not generate religious quotations with AI.
+
+Daily email uses the existing Supabase admin / Resend delivery infrastructure. Configure server-only `RESEND_API_KEY`, `DAILY_FROM_EMAIL` (or `SCHOLAR_FROM_EMAIL`) on a verified sending domain, `CRON_SECRET`, and Supabase credentials. Vercel calls `/api/cron/daily-learning` at 13:00 UTC daily (8 a.m. Toronto standard time, 9 a.m. daylight time). The handler requires bearer authorization, checks confirmed email and current opt-in, and uses date-scoped provider idempotency plus server-managed send markers. Email remains disabled in the UI until configuration is present. No subscriber address is hard-coded into the public site. In-app reminders are shown on site visits, not background device push.
+
+Run `node --test tests/*.test.mjs` to check local-date rollover, personalization, and email authorization, opt-in, duplicate handling, and provider failure behavior, alongside the existing suite.
+

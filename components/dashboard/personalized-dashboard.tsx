@@ -11,6 +11,7 @@ import { ActivityControls } from '@/components/learning/activity-controls'
 import { ContentCard, formatLabels } from '@/components/learning/content-card'
 import { primaryButton, secondaryButton } from '@/lib/site'
 import { cn } from '@/lib/utils'
+import { DailyLearningReminder } from '@/components/learning/daily-learning'
 
 export function PersonalizedDashboard() {
   const state = useLearningActivity()
@@ -32,6 +33,7 @@ export function PersonalizedDashboard() {
         <p className="mt-3 max-w-2xl text-white/80">Lectures to inspire you. Articles to reflect on. Courses to grow with. Podcasts for the journey.</p>
         <div className="mt-6 flex flex-wrap gap-2" aria-label="Your interests">{selected.map((id) => <span key={id} className="rounded-full bg-white/15 px-3 py-1.5 text-sm">{interestLabel(id)}</span>)}</div>
       </section>
+      <DailyLearningReminder />
       <ActivityControls state={state} />
       <div className="my-8 flex flex-wrap items-center justify-between gap-4"><div><h2 className="text-2xl font-bold text-navy">Picked for your journey</h2><p className="mt-2 text-sm text-muted-foreground">{activity.enabled ? 'Your interests, completed learning, topic searches, and scholar follows shape this feed.' : 'Recommendations based on your selected interests. Enable activity personalization to help your feed adapt.'}</p></div><Link href="/learn" className={secondaryButton}>Search the library</Link></div>
       {contentKinds.map((kind) => {

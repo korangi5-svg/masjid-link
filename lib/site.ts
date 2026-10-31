@@ -5,6 +5,7 @@ export const navLinks = [
   { href: '/masjids', label: 'Masjids' },
   { href: '/events', label: 'Events' },
   { href: '/resources', label: 'Resources' },
+  { href: '/daily-learning', label: 'Daily Learning' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
 ].filter((link) => eventsEnabled || link.href !== '/events')
