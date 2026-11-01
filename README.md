@@ -153,6 +153,14 @@ To learn more, take a look at the following resources:
 
 # Daily Islamic learning
 
+## Q&A routing and review
+
+`/questions` searches seven sourced starter answers plus up to 200 latest reviewer-published answers. It normalizes common terms, tags the topic, and conservatively distinguishes answer matches from related reading. It uses topic/wording matching rather than an external generative AI service. Low-confidence questions are automatically saved for human review when the member is signed in with a verified email; guests are prompted to log in. Members can also request review when suggestions do not help.
+
+The persistent queue uses the existing `contact_messages` table with `QA:pending`, `QA:answered`, and `QA:published` subjects and validated JSON records. No schema migration is required. Deterministic per-account question IDs suppress repeated submissions. New review submissions are limited to ten per account per day, with an additional best-effort per-instance search throttle. Members see only their own tickets. Database failures explicitly report that escalation did not succeed.
+
+`/questions/review` is restricted on the server to verified reviewer accounts. By default this is the site-contact address, `mohammad.arifkhan10@outlook.com`; optionally configure server-only `QA_REVIEWER_EMAILS` (comma separated) or an admin-managed `app_metadata.qa_reviewer` flag. User-editable metadata cannot grant access. Reviewers can recategorize a question, answer privately, or explicitly publish a reusable sourced answer after removing personal details. Replies appear in the member’s question history; the queue does not send email or device push notifications. Public knowledge-base responses never include account IDs or email addresses.
+
 ## Guided New Muslim Path
 
 `/learning-path` offers four ordered modules: Shahadah, Salah (an overview), Wudu, and Quran Basics. It is linked from daily learning, the library, and the signed-in dashboard. Each module includes a short sourced lesson, a practical activity, and a knowledge check. Passing the check saves completion and automatically selects/unlocks the next module; completed modules can be revisited. Visitors can preview the first module and sign in to save progress.

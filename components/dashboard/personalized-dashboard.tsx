@@ -13,6 +13,7 @@ import { primaryButton, secondaryButton } from '@/lib/site'
 import { cn } from '@/lib/utils'
 import { DailyLearningReminder } from '@/components/learning/daily-learning'
 import { LearningPathLink } from '@/components/learning/learning-path'
+import { QuestionsLink } from '@/components/learning/questions'
 
 export function PersonalizedDashboard() {
   const state = useLearningActivity()
@@ -36,6 +37,7 @@ export function PersonalizedDashboard() {
       </section>
       <DailyLearningReminder />
       <LearningPathLink />
+      <QuestionsLink />
       <ActivityControls state={state} />
       <div className="my-8 flex flex-wrap items-center justify-between gap-4"><div><h2 className="text-2xl font-bold text-navy">Picked for your journey</h2><p className="mt-2 text-sm text-muted-foreground">{activity.enabled ? 'Your interests, completed learning, topic searches, and scholar follows shape this feed.' : 'Recommendations based on your selected interests. Enable activity personalization to help your feed adapt.'}</p></div><Link href="/learn" className={secondaryButton}>Search the library</Link></div>
       {contentKinds.map((kind) => {
