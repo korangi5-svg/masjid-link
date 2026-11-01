@@ -153,6 +153,12 @@ To learn more, take a look at the following resources:
 
 # Daily Islamic learning
 
+## Guided New Muslim Path
+
+`/learning-path` offers four ordered modules: Shahadah, Salah (an overview), Wudu, and Quran Basics. It is linked from daily learning, the library, and the signed-in dashboard. Each module includes a short sourced lesson, a practical activity, and a knowledge check. Passing the check saves completion and automatically selects/unlocks the next module; completed modules can be revisited. Visitors can preview the first module and sign in to save progress.
+
+`/api/learning-path` authenticates each request using the member's Supabase access token and stores the ordered completion prefix in server-managed `app_metadata.new_muslim_path`. It uses the existing server-only Supabase admin configuration and requires no schema migration. User-editable metadata cannot unlock the path. Failed saves leave the next module locked. This is a self-paced introductory study record, not a religious declaration or certification.
+
 Visit `/daily-learning` for the public five-part lesson, linked from the homepage and navigation. Signed-in members receive an in-app reminder on `/dashboard` and `/notifications`, can mark the day complete, and can opt into daily email to their verified account address. Parenting and New Muslims interests adapt the practical action. The initial seven-day practice cycle deliberately revisits a small, sourced scripture collection; expand `lib/daily-learning.ts` to add reviewed content. It does not generate religious quotations with AI.
 
 Daily email uses the existing Supabase admin / Resend delivery infrastructure. Configure server-only `RESEND_API_KEY`, `DAILY_FROM_EMAIL` (or `SCHOLAR_FROM_EMAIL`) on a verified sending domain, `CRON_SECRET`, and Supabase credentials. Vercel calls `/api/cron/daily-learning` at 13:00 UTC daily (8 a.m. Toronto standard time, 9 a.m. daylight time). The handler requires bearer authorization, checks confirmed email and current opt-in, and uses date-scoped provider idempotency plus server-managed send markers. Email remains disabled in the UI until configuration is present. No subscriber address is hard-coded into the public site. In-app reminders are shown on site visits, not background device push.
