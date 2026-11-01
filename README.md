@@ -153,6 +153,10 @@ To learn more, take a look at the following resources:
 
 # Daily Islamic learning
 
+## Community discussion moderation
+
+The new `/discussions` board supports moderated posts and replies, automatic safe-post approval, private review queues, appeals, and moderator overrides. See [DISCUSSION_MODERATION.md](DISCUSSION_MODERATION.md) for the required Supabase migration, AI configuration, moderator access, and verification instructions. Discussions stay private pending review when AI checks are unavailable.
+
 ## Q&A routing and review
 
 `/questions` searches seven sourced starter answers plus up to 200 latest reviewer-published answers. It normalizes common terms, tags the topic, and conservatively distinguishes answer matches from related reading. It uses topic/wording matching rather than an external generative AI service. Low-confidence questions are automatically saved for human review when the member is signed in with a verified email; guests are prompted to log in. Members can also request review when suggestions do not help.
