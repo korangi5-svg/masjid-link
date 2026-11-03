@@ -9,6 +9,16 @@ export type ModerationDecision = {
 const pending = (): ModerationDecision => ({ status: 'pending', flags: [], reason: 'Awaiting moderator review', source: 'fallback' })
 const fields = ['spam', 'abuse', 'argument', 'inappropriate', 'uncertain'] as const
 
+async function logProviderFailure(stage: string, response: Response) {
+  // Log only HTTP status and a provider error code, never the key, post, or error message.
+  let code = 'unknown'
+  try {
+    const payload = await response.json()
+    if (typeof payload?.error?.code === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(payload.error.code)) code = payload.error.code
+  } catch { /* Non-JSON failures still have an HTTP status. */ }
+  console.warn('Discussion moderation provider failure', { stage, status: response.status, code })
+}
+
 export function isDiscussionModerator(user: { email?: string; email_confirmed_at?: string; app_metadata?: Record<string, unknown> }) {
   const emails = (process.env.MODERATOR_EMAILS || '').split(',').map(value => value.trim().toLowerCase()).filter(Boolean)
   return Boolean(user.email_confirmed_at && (user.app_metadata?.discussion_moderator === true || emails.includes(user.email?.toLowerCase() || '')))
@@ -26,7 +36,7 @@ export async function moderateDiscussion(body: string, context: string[] = []): 
       method: 'POST', headers, signal,
       body: JSON.stringify({ model: 'omni-moderation-latest', input: body }),
     })
-    if (!safetyResponse.ok) return pending()
+    if (!safetyResponse.ok) { await logProviderFailure('safety', safetyResponse); return pending() }
     const safety = (await safetyResponse.json()).results?.[0]
     if (!safety || typeof safety.flagged !== 'boolean' || !safety.categories || typeof safety.categories !== 'object') return pending()
     if (safety.flagged) {
@@ -47,7 +57,7 @@ export async function moderateDiscussion(body: string, context: string[] = []): 
         } } },
       }),
     })
-    if (!response.ok) return pending()
+    if (!response.ok) { await logProviderFailure('classification', response); return pending() }
     const result = await response.json()
     if (result.status !== 'completed') return pending()
     const output = (result.output || []).filter((item: { type: string }) => item.type === 'message')
@@ -60,6 +70,8 @@ export async function moderateDiscussion(body: string, context: string[] = []): 
     if (flags.length) return { status: flags.includes('argument') && flags.length === 1 ? 'pending' : 'held', flags, reason: 'Community rule concern; moderator review required', source: 'ai' }
     return { status: 'approved', flags: [], reason: 'Automatic checks passed', source: 'ai' }
   } catch {
+    console.warn('Discussion moderation check unavailable; kept pending')
     return pending()
   }
 }
+
