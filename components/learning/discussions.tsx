@@ -67,6 +67,7 @@ export function Discussions({ review = false }: { review?: boolean }) {
       {review ? <Link href="/discussions" className={secondaryButton}>Back to discussions</Link> : <><button className={secondaryButton} disabled={busy} onClick={() => { setView('public'); setThread(null) }}>Discussions</button>{user && <button className={secondaryButton} disabled={busy} onClick={() => { setView('mine'); setThread(null) }}>My posts</button>}</>}
       {moderator && !review && <Link href="/discussions/review" className={secondaryButton}>Moderation queue</Link>}
       <Link href="/questions" className={secondaryButton}>Questions & answers</Link>
+      <Link href="/community" className={secondaryButton}>Find community groups</Link>
       <button className={secondaryButton} disabled={busy} onClick={() => setRefresh(value => value + 1)}>Refresh</button>
     </div>
     {review && <label className="mb-6 block font-semibold">Show<select value={filter} onChange={e => setFilter(e.target.value)} disabled={busy} className={`${inputClass} mt-2`}><option value="queue">Pending, flagged, and appealed posts</option><option value="approved">Approved posts — review or remove</option><option value="rejected">Rejected posts — reconsider</option></select></label>}
