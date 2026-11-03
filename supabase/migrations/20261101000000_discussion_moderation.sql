@@ -15,6 +15,7 @@ create table public.discussion_posts (
 create index discussion_status_created on public.discussion_posts(status, created_at);
 create index discussion_author_created on public.discussion_posts(author_id, created_at);
 create index discussion_parent_created on public.discussion_posts(parent_id, created_at);
+create index discussion_reviewer on public.discussion_posts(reviewed_by);
 alter table public.discussion_posts enable row level security;
 -- Read via server as well, so children of a hidden root never leak through direct REST reads.
 revoke all on public.discussion_posts from anon, authenticated;
@@ -30,19 +31,23 @@ create table public.discussion_moderation_events (
   review_note text not null,
   created_at timestamptz not null default now()
 );
+create index discussion_events_post on public.discussion_moderation_events(post_id, created_at);
+create index discussion_events_actor on public.discussion_moderation_events(actor_id);
 alter table public.discussion_moderation_events enable row level security;
 revoke all on public.discussion_moderation_events from anon, authenticated;
 grant all on public.discussion_moderation_events to service_role;
 grant usage, select on sequence public.discussion_moderation_events_id_seq to service_role;
 
 create function public.audit_discussion_moderation() returns trigger
-language plpgsql security definer set search_path = '' as $$
+language plpgsql security invoker set search_path = '' as $$
 begin
   insert into public.discussion_moderation_events(post_id,actor_id,status,moderation,appealed,review_note)
   values(new.id,new.reviewed_by,new.status,new.moderation,new.appealed,new.review_note);
   return new;
 end;
 $$;
+revoke all on function public.audit_discussion_moderation() from public, anon, authenticated;
+grant execute on function public.audit_discussion_moderation() to service_role;
 create trigger discussion_moderation_audit after insert or update on public.discussion_posts
 for each row execute function public.audit_discussion_moderation();
 
@@ -68,3 +73,4 @@ end;
 $$;
 revoke all on function public.submit_discussion_post(uuid,text,uuid) from public, anon, authenticated;
 grant execute on function public.submit_discussion_post(uuid,text,uuid) to service_role;
+
