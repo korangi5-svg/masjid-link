@@ -3,6 +3,7 @@ import { contactInfo } from '@/lib/site'
 import { getSupabase } from '@/lib/supabase'
 import { validateEmail, validateRequired } from '@/lib/validation'
 import type { ContactMessage } from '@/lib/types'
+import { getContactPurpose } from '@/lib/contact-purposes'
 
 export const runtime = 'nodejs'
 const attempts = new Map<string, { count: number; until: number }>()
@@ -21,7 +22,9 @@ export async function POST(request: Request) {
   } catch { return failure('Invalid message.', 400) }
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return failure('Invalid message.', 400)
   const input = raw as Record<string, unknown>
-  const fields = ['name', 'email', 'subject', 'message'] as const
+  const purpose = getContactPurpose(input.purpose)
+  if (!purpose) return failure('Please select a valid purpose for your message.', 400)
+  const fields = ['purpose', 'name', 'email', 'subject', 'message'] as const
   if (fields.some(key => typeof input[key] !== 'string')) return failure('Please complete all fields.', 400)
   const message = Object.fromEntries(fields.map(key => [key, (input[key] as string).trim()])) as unknown as ContactMessage
   if (validateRequired(message.name, 'name', 100) || validateEmail(message.email) || /[\r\n]/.test(message.email) || validateRequired(message.subject, 'subject', 150) || /[\r\n]/.test(message.subject) || validateRequired(message.message, 'message', 3000)) {
@@ -43,8 +46,8 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         from: process.env.CONTACT_FROM_EMAIL || 'Connect to Masjid <onboarding@resend.dev>',
         to: [contactInfo.email], reply_to: message.email,
-        subject: `[Masjid Link] ${message.subject}`,
-        text: `Name: ${message.name}\nEmail: ${message.email}\n\n${message.message}`,
+        subject: `[Masjid Link · ${purpose.label}] ${message.subject}`,
+        text: `Purpose: ${purpose.label}\nName: ${message.name}\nEmail: ${message.email}\n\n${message.message}`,
       }),
       signal: AbortSignal.timeout(10000),
     })
@@ -59,7 +62,8 @@ export async function POST(request: Request) {
     try {
       const db = getSupabase()
       if (db) {
-        const { error } = await db.from('contact_messages').insert(message)
+        const { purpose: _purpose, ...archive } = message
+        const { error } = await db.from('contact_messages').insert({ ...archive, message: `Purpose: ${purpose.label}\n\n${message.message}` })
         if (error) console.error('[contact] Email accepted, archive failed')
       }
     } catch { console.error('[contact] Email accepted, archive unavailable') }

@@ -58,6 +58,7 @@ export interface ResourceCategory {
 }
 
 export interface ContactMessage {
+  purpose: string
   name: string
   email: string
   subject: string
