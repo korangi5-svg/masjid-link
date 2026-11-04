@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 }
 
 const pages = [
+  { title: 'Hijri and Gregorian Calendar', href: '/calendar', description: 'View Islamic and English calendar dates for your location and time zone.' },
   { title: 'Find a Masjid', href: '/masjids', description: 'Find mosques, prayer times, and Jumuah by city or postal code.' },
   { title: 'Community Discussions', href: '/discussions', description: 'Join the discussion, share a post, and read community replies.' },
   { title: 'Find Your Community', href: '/community', description: 'Find community groups by city, language, age bracket, or learning goals.' },
