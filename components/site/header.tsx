@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { Search } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { AccountMenu } from '@/components/auth/account-menu'
 import { Logo } from '@/components/site/logo'
@@ -42,7 +43,10 @@ export function Header() {
           </ul>
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
+          <Link href="/search" aria-label="Search Masjid Link" aria-current={pathname === '/search' ? 'page' : undefined} className={cn('flex size-11 items-center justify-center rounded-full text-navy hover:bg-surface', focusRing)}>
+            <Search className="size-5" aria-hidden="true" />
+          </Link>
           {accountsEnabled ? <NotificationLink /> : null}
           {accountsEnabled ? <AccountMenu /> : null}
           <MobileMenu pathname={pathname} />
