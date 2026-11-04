@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Mail, MapPin, Phone } from 'lucide-react'
+import { VisitorCounter } from '@/components/site/visitor-counter'
 import { Logo } from '@/components/site/logo'
 import { SocialLinks } from '@/components/site/social-links'
 import { contactInfo, focusRing, navLinks } from '@/lib/site'
@@ -78,6 +79,7 @@ export function Footer() {
       <div className="border-t border-white/10">
         <p className="mx-auto max-w-7xl px-4 py-6 text-center text-xs text-white/60 sm:px-6 lg:px-8">
           © 2026 Connect to Masjid. All rights reserved.
+          <VisitorCounter />
         </p>
       </div>
     </footer>
