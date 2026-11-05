@@ -34,7 +34,7 @@ export function VisitorCounter() {
   }, [])
 
   if (count === null) return null
-  return <span className="block mt-2" title="Approximate total based on distinct browsers since the counter launched">
-    Website visitors: {count.toLocaleString('en-CA')}
+  return <span className="mt-4 flex flex-wrap items-baseline justify-center gap-x-2 text-xl font-semibold text-white sm:text-2xl" title="Approximate total based on distinct browsers since the counter launched">
+    Website visitors: <strong className="text-3xl tabular-nums sm:text-4xl">{count.toLocaleString('en-CA')}</strong>
   </span>
 }
