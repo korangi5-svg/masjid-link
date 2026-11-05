@@ -33,6 +33,8 @@ export function Calendar() {
   const [now, setNow] = useState<Date | null>(null)
   const [city, setCity] = useState('')
   const [cityLabel, setCityLabel] = useState('')
+  const [holidays, setHolidays] = useState<{ date: string; name: string }[] | null>(null)
+  const [hasRegion, setHasRegion] = useState(false)
   const [cityError, setCityError] = useState('')
   const [searching, setSearching] = useState(false)
   const [zone, setZone] = useState('')
@@ -61,6 +63,8 @@ export function Calendar() {
       if (!response.ok) throw new Error(result.error)
       setZone(result.zone)
       setCityLabel(result.label)
+      setHolidays(result.holidays ?? null)
+      setHasRegion(Boolean(result.hasRegion))
       setAnchor(null)
     } catch (error) {
       setCityError(error instanceof Error && error.message
@@ -113,6 +117,19 @@ export function Calendar() {
         </label>
       </div>
       <p className="mt-3 text-sm text-muted-foreground">The calendar uses your location’s civil date and the Umm al-Qura calculation. Adjust the Hijri date to match your local mosque’s moon-sighting announcement.</p>
+      {cityLabel && <section className="mt-6 rounded-xl border border-border bg-surface p-4" aria-live="polite" aria-label="Holiday notice">
+        <h2 className="text-lg font-semibold text-navy">Upcoming public holidays</h2>
+        {holidays?.length ? <>
+          <p className="mt-1 text-sm text-muted-foreground">{hasRegion ? 'National and available regional holidays' : 'National holidays'}</p>
+          <ul className="mt-2 space-y-1">
+            {holidays.map(holiday => <li key={holiday.date + holiday.name}>
+              <time dateTime={holiday.date}>{gregorian.format(new Date(holiday.date))}</time> · {holiday.name}
+            </li>)}
+          </ul>
+        </> : <p className="mt-1 text-sm text-muted-foreground">
+          {holidays ? 'No upcoming holidays were found.' : 'Holiday data is unavailable for this location.'}
+        </p>}
+      </section>}
       <div className="mt-6 flex flex-wrap gap-2" aria-label="Calendar view">
         <button type="button" className={secondaryButton} aria-pressed={isHijri} onClick={() => setIsHijri(true)}>Hijri month</button>
         <button type="button" className={secondaryButton} aria-pressed={!isHijri} onClick={() => setIsHijri(false)}>Gregorian month</button>
