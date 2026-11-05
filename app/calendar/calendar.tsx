@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { inputClass, secondaryButton } from '@/lib/site'
 
 const DAY = 86400000
@@ -31,6 +31,10 @@ function monthBounds(anchor: number, isHijri: boolean, offset: number) {
 
 export function Calendar() {
   const [now, setNow] = useState<Date | null>(null)
+  const [city, setCity] = useState('')
+  const [cityLabel, setCityLabel] = useState('')
+  const [cityError, setCityError] = useState('')
+  const [searching, setSearching] = useState(false)
   const [zone, setZone] = useState('')
   const [zones, setZones] = useState<string[]>([])
   const [anchor, setAnchor] = useState<number | null>(null)
@@ -44,6 +48,29 @@ export function Calendar() {
     return () => window.clearInterval(timer)
   }, [])
 
+  async function selectCity(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const query = city.trim()
+    if (!query || searching) return
+
+    setSearching(true)
+    setCityError('')
+    try {
+      const response = await fetch(`/api/calendar/location?city=${encodeURIComponent(query)}`)
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error)
+      setZone(result.zone)
+      setCityLabel(result.label)
+      setAnchor(null)
+    } catch (error) {
+      setCityError(error instanceof Error && error.message
+        ? error.message
+        : 'Could not look up the city. Try again.')
+    } finally {
+      setSearching(false)
+    }
+  }
+
   const today = now ? localDay(now, zone) : null
   const bounds = today === null ? null : monthBounds(anchor ?? today, isHijri, offset)
   const days = bounds ? Array.from({ length: (bounds.end - bounds.start) / DAY }, (_, index) => bounds.start + index * DAY) : []
@@ -55,11 +82,25 @@ export function Calendar() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <h1 className="text-4xl font-bold text-navy">Hijri &amp; Gregorian Calendar</h1>
+      <form onSubmit={selectCity} className="mt-6 flex flex-wrap items-end gap-3">
+        <label className="min-w-52 flex-1 font-semibold">City
+          <input className={inputClass} value={city} onChange={event => setCity(event.target.value)}
+            placeholder="Toronto, Canada" required maxLength={120} disabled={searching} />
+        </label>
+        <button className={secondaryButton} type="submit" disabled={searching}>
+          {searching ? 'Finding city…' : 'Set city'}
+        </button>
+      </form>
+      <div aria-live="polite" className="mt-2 text-sm">
+        {cityError && <p>{cityError}</p>}
+        {cityLabel && <p>Calendar location · {cityLabel}</p>}
+      </div>
       {today !== null && <p className="mt-3 text-muted-foreground">Today · {hijri.format(today + offset * DAY)} · {gregorian.format(today)}</p>}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <label className="font-semibold">Location time zone
-          <select className={inputClass} value={zone} onChange={event => { setZone(event.target.value); setAnchor(null) }}>
+          <select className={inputClass} value={zone} disabled={searching} onChange={event => { setZone(event.target.value); setCityLabel(''); setCityError(''); setAnchor(null) }}>
             <option value="">Device time zone{now ? ` (${Intl.DateTimeFormat().resolvedOptions().timeZone})` : ''}</option>
+            {zone && !zones.includes(zone) && <option value={zone}>{zone.replaceAll('_', ' ')}</option>}
             {zones.map(value => <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}
           </select>
         </label>
