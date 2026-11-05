@@ -46,7 +46,7 @@ export function Calendar() {
   useEffect(() => {
     setNow(new Date())
     setZones(typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : ['America/Toronto', 'Europe/London', 'Asia/Riyadh', 'Asia/Karachi', 'Asia/Jakarta', 'UTC'])
-    const timer = window.setInterval(() => setNow(new Date()), 30000)
+    const timer = window.setInterval(() => setNow(new Date()), 1000)
     return () => window.clearInterval(timer)
   }, [])
 
@@ -75,6 +75,14 @@ export function Calendar() {
     }
   }
 
+  const localTime = now ? new Intl.DateTimeFormat('en-CA', {
+    timeZone: zone || undefined,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZoneName: 'short',
+  }).format(now) : null
+
   const today = now ? localDay(now, zone) : null
   const bounds = today === null ? null : monthBounds(anchor ?? today, isHijri, offset)
   const days = bounds ? Array.from({ length: (bounds.end - bounds.start) / DAY }, (_, index) => bounds.start + index * DAY) : []
@@ -99,6 +107,9 @@ export function Calendar() {
         {cityError && <p>{cityError}</p>}
         {cityLabel && <p>Calendar location · {cityLabel}</p>}
       </div>
+      {localTime && <p className="mt-3 text-lg font-semibold text-navy">
+        Local time · <time className="tabular-nums">{localTime}</time>
+      </p>}
       {today !== null && <p className="mt-3 text-muted-foreground">Today · {hijri.format(today + offset * DAY)} · {gregorian.format(today)}</p>}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <label className="font-semibold">Location time zone
