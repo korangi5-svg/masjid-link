@@ -7,6 +7,8 @@ export interface GeoPoint {
   label: string
   city: string
   province: string
+  countryCode?: string
+  regionCode?: string
   postalCode: string
 }
 
@@ -22,6 +24,8 @@ interface NominatimHit {
     state?: string
     province?: string
     postcode?: string
+    country_code?: string
+    'ISO3166-2-lvl4'?: string
     country?: string
   }
 }
@@ -34,6 +38,7 @@ interface PhotonResponse {
       city?: string
       state?: string
       postcode?: string
+      countrycode?: string
       country?: string
     }
   }>
@@ -63,6 +68,8 @@ async function geocodeNominatim(query: string): Promise<GeoPoint | null> {
       label: hit.display_name ?? query,
       city: address.city || address.town || address.village || address.municipality || '',
       province: address.state || address.province || '',
+      countryCode: address.country_code?.toUpperCase(),
+      regionCode: address['ISO3166-2-lvl4'],
       postalCode: address.postcode || '',
     }
   } catch {
@@ -85,6 +92,7 @@ async function geocodePhoton(query: string): Promise<GeoPoint | null> {
       label: [props.name, props.city, props.state, props.country].filter(Boolean).join(', ') || query,
       city: props.city || props.name || '',
       province: props.state || '',
+      countryCode: props.countrycode?.toUpperCase(),
       postalCode: props.postcode || '',
     }
   } catch {
