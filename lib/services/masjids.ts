@@ -53,7 +53,7 @@ export async function searchMasjidsNearby({
     masjids: [...torontoMasjids.map((masjid) => withDistance(masjid, prayerTimes, origin)),
       ...mosques.filter((mosque) => !torontoMasjids.some((masjid) =>
         haversineKm(mosque.lat, mosque.lng, masjid.latitude, masjid.longitude) < 0.15 &&
-        /agincourt muslim|namira|al[ -]?faisal|abu hurai/i.test(mosque.name)
+        /agincourt muslim|namira|al[ -]?faisal|abu hurai|dar\s*us[ -]*salaam|islamic society of toronto/i.test(mosque.name)
       )).map((mosque) => toMasjid(mosque, origin.lat, origin.lng, prayerTimes))]
       .filter((masjid) => masjid.distanceKm <= radius)
       .sort((a, b) => a.distanceKm - b.distanceKm)

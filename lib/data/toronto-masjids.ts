@@ -37,4 +37,16 @@ export const torontoMasjids: Omit<Masjid, 'distanceKm' | 'prayerTimes' | 'servic
     website: 'https://www.abuhuraira.org/contact',
     description: 'Community mosque in North York.',
   },
+  {
+    id: 'masjid-darus-salaam-overlea',
+    name: 'Masjid Darus Salaam (Islamic Society of Toronto)',
+    address: '20 Overlea Blvd',
+    city: 'Toronto',
+    province: 'Ontario',
+    postalCode: 'M4H 1A4',
+    latitude: 43.70606,
+    longitude: -79.35105,
+    website: 'https://www.islamicsocietyoftoronto.com/contact/',
+    description: 'Community mosque in Thorncliffe Park.',
+  },
 ]
