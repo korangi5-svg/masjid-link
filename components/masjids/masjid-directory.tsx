@@ -21,7 +21,7 @@ const distanceOptions = [
 
 type Status = 'idle' | 'locating' | 'loading' | 'done' | 'error'
 type Coords = { lat: number; lng: number }
-type Origin = Coords & { label?: string }
+type Origin = Coords & { label?: string; area?: boolean }
 
 // Searches against public OpenStreetMap servers can be slow; keep people informed while they wait.
 function loadingMessage(seconds: number) {
@@ -166,7 +166,7 @@ export function MasjidDirectory({
           <label htmlFor={distanceId} className="mb-1.5 block text-sm font-medium text-navy">
             Distance
           </label>
-          <select id={distanceId} value={distance} onChange={(e) => handleDistanceChange(e.target.value)} className={inputClass}>
+          <select id={distanceId} value={distance} disabled={origin?.area && query.trim() === place} onChange={(e) => handleDistanceChange(e.target.value)} className={inputClass}>
             {distanceOptions.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -199,7 +199,7 @@ export function MasjidDirectory({
         {status === 'done' && (
           <>
             <p>
-              <strong className="text-navy">{masjids.length}</strong> masjid{masjids.length === 1 ? '' : 's'} within {distance} km of{' '}
+              <strong className="text-navy">{masjids.length}</strong> masjid{masjids.length === 1 ? '' : 's'} {origin?.area ? 'in' : `within ${distance} km of`}{' '}
               <strong className="text-navy">{place}</strong>
             </p>
             {matchedPlace && matchedPlace.toLowerCase() !== place.toLowerCase() ? (

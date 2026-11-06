@@ -11,12 +11,16 @@ export interface GeoPoint {
   countryCode?: string
   regionCode?: string
   postalCode: string
+  boundaryId?: number
 }
 
 interface NominatimHit {
   lat: string
   lon: string
   display_name?: string
+  osm_type?: string
+  osm_id?: number
+  addresstype?: string
   address?: {
     city?: string
     town?: string
@@ -47,10 +51,15 @@ interface PhotonResponse {
   }>
 }
 
+export const TORONTO_BOUNDARY_ID = 324211
+
 const GEOCODE_TTL_MS = 1000 * 60 * 60 * 24
 
 export async function geocodeLocation(query: string): Promise<GeoPoint | null> {
-  const key = `geocode:v2:${query.trim().toLowerCase()}`
+  if (/^toronto(?:,? (?:ontario|on))?(?:,? canada)?$/i.test(query.trim())) {
+    return { lat: 43.65348, lng: -79.38393, label: 'Toronto, Ontario, Canada', city: 'Toronto', province: 'Ontario', countryCode: 'CA', postalCode: '', boundaryId: TORONTO_BOUNDARY_ID }
+  }
+  const key = `geocode:v3:${query.trim().toLowerCase()}`
   return cacheGetOrSet(key, GEOCODE_TTL_MS, async () => {
     try {
       return await geocodeNominatim(query) ?? await geocodePhoton(query)
@@ -65,7 +74,10 @@ async function geocodeNominatim(query: string): Promise<GeoPoint | null> {
   try {
     const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&addressdetails=1&q=${encodeURIComponent(query)}`
     const hits = await fetchJson<NominatimHit[]>(url, { timeoutMs: 8000 })
-    const hit = uniqueMatch(hits, (hit) => hit.display_name ?? '', (hit) => [Number(hit.lat), Number(hit.lon)], query)
+    const namedBoundaries = hits.filter((hit) => boundaryId(hit) &&
+      normalizeLocation(hit.display_name?.split(',')[0] ?? '').replace(/ (district|town)$/, '') ===
+      normalizeLocation(query.split(',')[0]).replace(/ (district|town)$/, ''))
+    const hit = uniqueMatch(namedBoundaries.length ? namedBoundaries : hits, (hit) => hit.display_name ?? '', (hit) => [Number(hit.lat), Number(hit.lon)], query)
     if (!hit) return null
     const address = hit.address ?? {}
     return {
@@ -77,6 +89,7 @@ async function geocodeNominatim(query: string): Promise<GeoPoint | null> {
       countryCode: address.country_code?.toUpperCase(),
       regionCode: address['ISO3166-2-lvl4'],
       postalCode: address.postcode || '',
+      boundaryId: boundaryId(hit),
     }
   } catch (error) {
     if (error instanceof AmbiguousLocationError) throw error
@@ -148,3 +161,9 @@ function uniqueMatch<T>(candidates: T[], label: (candidate: T) => string, coordi
 }
 
 class AmbiguousLocationError extends Error {}
+
+function boundaryId(hit: NominatimHit) {
+  return hit.osm_type === 'relation' && Number.isSafeInteger(hit.osm_id) &&
+    /^(city|town|village|municipality|borough|suburb|quarter|district|city_district|county|state_district|state|province|region|administrative)$/.test(hit.addresstype ?? '')
+    ? hit.osm_id : undefined
+}

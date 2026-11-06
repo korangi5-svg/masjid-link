@@ -395,3 +395,14 @@ function photonType(value?: string): OsmElementType {
   if (value === 'R') return 'relation'
   return 'node'
 }
+
+export function findMosquesInBoundary(relationId: number) {
+  return cacheGetOrSet(`mosques:boundary:${relationId}`, NEARBY_TTL_MS, async () => {
+    const areaId = 3600000000 + relationId
+    const elements = await runOverpass(`
+[out:json][timeout:20];
+nwr["amenity"="place_of_worship"]["religion"="muslim"](area:${areaId});
+out center tags;`.trim(), 25000)
+    return dedupe(elements.map(mapElement).filter((masjid): masjid is OsmMasjid => Boolean(masjid)))
+  })
+}

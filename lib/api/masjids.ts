@@ -8,7 +8,7 @@ export interface MasjidSearchParams {
 }
 
 export interface MasjidSearchResult {
-  origin: { lat: number; lng: number; label?: string } | null
+  origin: { lat: number; lng: number; label?: string; area?: boolean } | null
   masjids: Masjid[]
 }
 

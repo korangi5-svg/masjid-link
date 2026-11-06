@@ -2,8 +2,8 @@ import { mockMasjids } from '@/lib/data/masjids'
 import { torontoMasjids } from '@/lib/data/toronto-masjids'
 import { getSupabase } from '@/lib/supabase'
 import { haversineKm, isValidCoord, roundKm } from '@/lib/geo'
-import { geocodeLocation } from '@/lib/services/geocoding'
-import { findMosquesNearby, getMosqueByOsmId, parseMasjidId, toMasjidId, type OsmMasjid } from '@/lib/services/overpass'
+import { geocodeLocation, TORONTO_BOUNDARY_ID } from '@/lib/services/geocoding'
+import { findMosquesInBoundary, findMosquesNearby, getMosqueByOsmId, parseMasjidId, toMasjidId, type OsmMasjid } from '@/lib/services/overpass'
 import { getPrayerTimes } from '@/lib/services/prayer-times'
 import type { Masjid, PrayerTimes } from '@/lib/types'
 
@@ -31,7 +31,7 @@ const DEFAULT_PRAYER_TIMES: PrayerTimes = {
 
 export interface NearbySearchResult {
   /** label is the place the geocoder matched, so users can spot a wrong match. */
-  origin: { lat: number; lng: number; label?: string }
+  origin: { lat: number; lng: number; label?: string; area?: boolean }
   masjids: Masjid[]
 }
 
@@ -43,21 +43,23 @@ export async function searchMasjidsNearby({
 }: NearbySearchInput): Promise<NearbySearchResult> {
   const origin = await resolveOrigin(location, lat, lng)
   const radius = Math.min(Math.max(radiusKm, 1), 50)
+  const { boundaryId } = origin
+  const curated = !boundaryId || boundaryId === TORONTO_BOUNDARY_ID ? torontoMasjids : []
   const [mosques, prayerTimes] = await Promise.all([
-    findMosquesNearby(origin.lat, origin.lng, radius),
+    boundaryId ? findMosquesInBoundary(boundaryId) : findMosquesNearby(origin.lat, origin.lng, radius),
     getPrayerTimes(origin.lat, origin.lng).catch(() => DEFAULT_PRAYER_TIMES),
   ])
 
   return {
-    origin: { lat: origin.lat, lng: origin.lng, label: 'label' in origin ? shortLabel(origin.label) : undefined },
-    masjids: [...torontoMasjids.map((masjid) => withDistance(masjid, prayerTimes, origin)),
-      ...mosques.filter((mosque) => !torontoMasjids.some((masjid) =>
+    origin: { lat: origin.lat, lng: origin.lng, label: origin.label ? shortLabel(origin.label) : undefined, area: Boolean(boundaryId) },
+    masjids: [...curated.map((masjid) => withDistance(masjid, prayerTimes, origin)),
+      ...mosques.filter((mosque) => !curated.some((masjid) =>
         haversineKm(mosque.lat, mosque.lng, masjid.latitude, masjid.longitude) < 0.15 &&
         /agincourt muslim|namira|al[ -]?faisal|abu hurai|dar\s*us[ -]*salaam|islamic society of toronto/i.test(mosque.name)
       )).map((mosque) => toMasjid(mosque, origin.lat, origin.lng, prayerTimes))]
-      .filter((masjid) => masjid.distanceKm <= radius)
+      .filter((masjid) => boundaryId || masjid.distanceKm <= radius)
       .sort((a, b) => a.distanceKm - b.distanceKm)
-      .slice(0, 40),
+      .slice(0, boundaryId ? undefined : 40),
   }
 }
 
@@ -123,7 +125,7 @@ function fromRow(row: MasjidRow): Masjid {
   }
 }
 
-async function resolveOrigin(location?: string, lat?: number, lng?: number) {
+async function resolveOrigin(location?: string, lat?: number, lng?: number): Promise<{ lat: number; lng: number; label?: string; boundaryId?: number }> {
   const query = location?.trim() ?? ''
   if (!query && lat != null && lng != null && isValidCoord(lat, lng)) {
     return { lat, lng }
