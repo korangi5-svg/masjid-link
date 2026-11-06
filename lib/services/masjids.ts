@@ -9,7 +9,7 @@ import type { Masjid, PrayerTimes } from '@/lib/types'
 
 export class LocationNotFoundError extends Error {
   constructor() {
-    super('We could not find that location. Try a city, neighbourhood, or postal code.')
+    super('We could not identify a single matching location. Add a province, state, country, or postal code.')
   }
 }
 
@@ -124,11 +124,11 @@ function fromRow(row: MasjidRow): Masjid {
 }
 
 async function resolveOrigin(location?: string, lat?: number, lng?: number) {
-  if (lat != null && lng != null && isValidCoord(lat, lng)) {
+  const query = location?.trim() ?? ''
+  if (!query && lat != null && lng != null && isValidCoord(lat, lng)) {
     return { lat, lng }
   }
 
-  const query = location?.trim() ?? ''
   if (!query) throw new LocationNotFoundError()
 
   const point = await geocodeLocation(query)

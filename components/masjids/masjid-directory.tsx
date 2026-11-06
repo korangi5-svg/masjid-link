@@ -52,8 +52,9 @@ export function MasjidDirectory({
   const [place, setPlace] = useState(initialQuery || (initialCoords ? initialPlace || 'your location' : ''))
   const [masjids, setMasjids] = useState(initialMasjids)
   const [origin, setOrigin] = useState(initialOrigin)
-  const [status, setStatus] = useState<Status>(hasInitialSearch ? 'done' : 'idle')
-  const [error, setError] = useState('')
+  const [status, setStatus] = useState<Status>(hasInitialSearch ? (initialOrigin ? 'done' : 'error') : 'idle')
+  const [error, setError] = useState(hasInitialSearch && !initialOrigin ?
+    'We could not identify a single matching location. Add a province, state, country, or postal code.' : '')
   const [elapsed, setElapsed] = useState(0)
   const requestId = useRef(0)
   const searchId = useId()
@@ -79,6 +80,8 @@ export function MasjidDirectory({
     const id = ++requestId.current
     setStatus('loading')
     setError('')
+    setOrigin(null)
+    setMasjids([])
     setPlace(label)
     setCoords(at ?? null)
     try {

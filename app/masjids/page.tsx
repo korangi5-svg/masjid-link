@@ -22,7 +22,7 @@ export default async function MasjidsPage({
   const query = typeof q === 'string' ? q.slice(0, 100).trim() : ''
   const lat = latRaw ? Number(latRaw) : undefined
   const lng = lngRaw ? Number(lngRaw) : undefined
-  const coords = lat != null && lng != null && isValidCoord(lat, lng) ? { lat, lng } : null
+  const coords = !query && lat != null && lng != null && isValidCoord(lat, lng) ? { lat, lng } : null
   let masjids: Masjid[] = []
   let origin: { lat: number; lng: number; label?: string } | null = coords
 
