@@ -1,4 +1,5 @@
 import { mockMasjids } from '@/lib/data/masjids'
+import { torontoMasjids } from '@/lib/data/toronto-masjids'
 import { getSupabase } from '@/lib/supabase'
 import { haversineKm, isValidCoord, roundKm } from '@/lib/geo'
 import { geocodeLocation } from '@/lib/services/geocoding'
@@ -49,7 +50,14 @@ export async function searchMasjidsNearby({
 
   return {
     origin: { lat: origin.lat, lng: origin.lng, label: 'label' in origin ? shortLabel(origin.label) : undefined },
-    masjids: mosques.map((mosque) => toMasjid(mosque, origin.lat, origin.lng, prayerTimes)),
+    masjids: [...torontoMasjids.map((masjid) => withDistance(masjid, prayerTimes, origin)),
+      ...mosques.filter((mosque) => !torontoMasjids.some((masjid) =>
+        haversineKm(mosque.lat, mosque.lng, masjid.latitude, masjid.longitude) < 0.15 &&
+        /agincourt muslim|namira|al[ -]?faisal|abu hurai/i.test(mosque.name)
+      )).map((mosque) => toMasjid(mosque, origin.lat, origin.lng, prayerTimes))]
+      .filter((masjid) => masjid.distanceKm <= radius)
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, 40),
   }
 }
 
@@ -61,6 +69,12 @@ export async function getMasjidById(id: string, origin?: { lat: number; lng: num
     const prayerTimes = await getPrayerTimes(mosque.lat, mosque.lng).catch(() => DEFAULT_PRAYER_TIMES)
     const from = origin ?? { lat: mosque.lat, lng: mosque.lng }
     return toMasjid(mosque, from.lat, from.lng, prayerTimes)
+  }
+
+  const curated = torontoMasjids.find((masjid) => masjid.id === id)
+  if (curated) {
+    const prayerTimes = await getPrayerTimes(curated.latitude, curated.longitude).catch(() => DEFAULT_PRAYER_TIMES)
+    return withDistance(curated, prayerTimes, origin)
   }
 
   // Curated listings (not from OpenStreetMap) live in the masjids table.
@@ -144,4 +158,13 @@ function toMasjid(mosque: OsmMasjid, originLat: number, originLng: number, praye
     services: mosque.services,
     prayerTimes,
   }
+}
+
+function withDistance(
+  masjid: (typeof torontoMasjids)[number],
+  prayerTimes: PrayerTimes,
+  origin?: { lat: number; lng: number },
+): Masjid {
+  const distanceKm = origin ? roundKm(haversineKm(origin.lat, origin.lng, masjid.latitude, masjid.longitude)) : 0
+  return { ...masjid, distanceKm, prayerTimes, services: [] }
 }

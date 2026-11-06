@@ -1,0 +1,40 @@
+import type { Masjid } from '@/lib/types'
+
+export const torontoMasjids: Omit<Masjid, 'distanceKm' | 'prayerTimes' | 'services'>[] = [
+  {
+    id: 'agincourt-muslim-association',
+    name: 'Agincourt Muslim Association (Namira Musallah)',
+    address: '3609B Sheppard Ave E',
+    city: 'Scarborough',
+    province: 'Ontario',
+    postalCode: 'M1T 3K8',
+    latitude: 43.78123,
+    longitude: -79.29789,
+    website: 'https://agincourtma.org/contact-us/',
+    description: 'Approximate pin near Birchmount Road. The prayer space is below Rexall, with an entrance at the rear.',
+  },
+  {
+    id: 'masjid-al-faisal',
+    name: 'Masjid Al-Faisal (Islamic Society of Willowdale)',
+    address: '3551 Victoria Park Ave',
+    city: 'Scarborough',
+    province: 'Ontario',
+    postalCode: 'M1W 2H2',
+    latitude: 43.801314,
+    longitude: -79.334527,
+    website: 'https://masjidalfaisal.com/',
+    description: 'Community mosque operated by the Islamic Society of Willowdale.',
+  },
+  {
+    id: 'abu-huraira-center',
+    name: 'Abu Huraira Center',
+    address: '270 Yorkland Blvd',
+    city: 'North York',
+    province: 'Ontario',
+    postalCode: 'M2J 5C9',
+    latitude: 43.77299,
+    longitude: -79.33458,
+    website: 'https://www.abuhuraira.org/contact',
+    description: 'Community mosque in North York.',
+  },
+]
