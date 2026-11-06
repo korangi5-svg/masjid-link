@@ -6,7 +6,7 @@ import { useState, type FormEvent } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { FormAlert, TextField } from '@/components/forms/form-field'
 import { PasswordField } from '@/components/auth/password-field'
-import { signIn } from '@/lib/services/auth'
+import { resendSignupConfirmation, signIn } from '@/lib/services/auth'
 import { focusRing, primaryButton } from '@/lib/site'
 import { cn } from '@/lib/utils'
 import { hasErrors, validateEmail, type FieldErrors } from '@/lib/validation'
@@ -20,8 +20,33 @@ export function LoginForm() {
   const [serverError, setServerError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  const [resending, setResending] = useState(false)
+  const [confirmationMessage, setConfirmationMessage] = useState('')
+
+  async function handleResend() {
+    const address = email.trim()
+    const error = validateEmail(address)
+    setErrors((current) => ({ ...current, email: error }))
+    setServerError('')
+    setConfirmationMessage('')
+    if (error) return
+
+    setResending(true)
+    try {
+      const result = await resendSignupConfirmation(address)
+      if (result.ok) setConfirmationMessage('If this account still needs confirmation, check your inbox for a new link.')
+      else setServerError(result.error ?? 'Could not resend the confirmation email.')
+    } catch {
+      setServerError('Could not connect. Please try again.')
+    } finally {
+      setResending(false)
+    }
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (resending) return
+    setConfirmationMessage('')
     const nextErrors = { email: validateEmail(email), password: password ? undefined : 'Please enter your password.' }
     setErrors(nextErrors)
     setServerError('')
@@ -36,6 +61,7 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+      {confirmationMessage && <FormAlert tone="success">{confirmationMessage}</FormAlert>}
       {serverError && <FormAlert tone="error">{serverError}</FormAlert>}
       <TextField
         label="Email"
@@ -67,9 +93,12 @@ export function LoginForm() {
           Forgot password?
         </Link>
       </div>
-      <button type="submit" disabled={submitting} className={cn(primaryButton, 'w-full')}>
+      <button type="submit" disabled={submitting || resending} className={cn(primaryButton, 'w-full')}>
         {submitting && <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />}
         {submitting ? 'Logging in…' : 'Log in'}
+      </button>
+      <button type="button" onClick={handleResend} disabled={submitting || resending} className={cn('self-start rounded text-sm font-semibold text-teal-dark underline disabled:opacity-70', focusRing)}>
+        {resending ? 'Sending…' : 'Resend confirmation email'}
       </button>
     </form>
   )

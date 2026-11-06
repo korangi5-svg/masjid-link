@@ -62,6 +62,17 @@ export async function signUp({ fullName, email, password, location, interests }:
   return { ok: true, data: { needsConfirmation: !data.session } }
 }
 
+export async function resendSignupConfirmation(email: string): Promise<ServiceResult> {
+  const supabase = getSupabase()
+  if (!supabase) return { ok: false, error: NOT_CONFIGURED }
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: `${authEmailOrigin()}/` },
+  })
+  return error ? { ok: false, error: toMessage(error) } : { ok: true }
+}
+
 export async function requestPasswordReset(email: string): Promise<ServiceResult> {
   const supabase = getSupabase()
   if (!supabase) return { ok: false, error: NOT_CONFIGURED }
