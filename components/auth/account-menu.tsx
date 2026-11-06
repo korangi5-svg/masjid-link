@@ -93,6 +93,15 @@ export function AccountMenu() {
         >
           <CircleUserRound className="size-4" aria-hidden="true" /> My account
         </Link>
+        {user.id === '3f126b26-2c3f-43d5-9c7f-182fcb64f1c2' && user.email_confirmed_at && (
+          <Link
+            href="/scholars/publish"
+            onClick={() => setOpen(false)}
+            className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-navy hover:bg-surface', focusRing)}
+          >
+            Publish an article
+          </Link>
+        )}
         <Link href="/scholars" onClick={() => setOpen(false)} className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-navy hover:bg-surface', focusRing)}>Followed scholars</Link>
         <Link href="/notifications" onClick={() => setOpen(false)} className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-navy hover:bg-surface', focusRing)}>Notifications & weekly digest</Link>
         <button
