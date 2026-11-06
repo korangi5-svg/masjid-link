@@ -36,6 +36,13 @@ export interface SignUpInput {
 }
 
 /** needsConfirmation is true when the project requires email confirmation before first sign-in. */
+function authEmailOrigin() {
+  const { hostname, origin } = window.location
+  return /^masjid-link(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(hostname)
+    ? 'https://masjid-link.vercel.app'
+    : origin
+}
+
 export async function signUp({ fullName, email, password, location, interests }: SignUpInput): Promise<ServiceResult<{ needsConfirmation: boolean }>> {
   const supabase = getSupabase()
   if (!supabase) return { ok: false, error: NOT_CONFIGURED }
@@ -48,7 +55,7 @@ export async function signUp({ fullName, email, password, location, interests }:
     password,
     options: {
       data: { full_name: fullName, location, interests: selected, onboarding_completed: true },
-      emailRedirectTo: `${window.location.origin}/`,
+      emailRedirectTo: `${authEmailOrigin()}/`,
     },
   })
   if (error) return { ok: false, error: toMessage(error) }
@@ -59,7 +66,7 @@ export async function requestPasswordReset(email: string): Promise<ServiceResult
   const supabase = getSupabase()
   if (!supabase) return { ok: false, error: NOT_CONFIGURED }
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`,
+    redirectTo: `${authEmailOrigin()}/reset-password`,
   })
   return error ? { ok: false, error: toMessage(error) } : { ok: true }
 }
