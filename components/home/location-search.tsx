@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useId, useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { ArrowRight, LoaderCircle, LocateFixed, MapPin, Search } from 'lucide-react'
 import { searchMasjids, type MasjidSearchParams } from '@/lib/api/masjids'
 import { getCurrentLocation } from '@/lib/locate'
@@ -19,8 +19,31 @@ type SearchState =
 export function LocationSearch() {
   const [location, setLocation] = useState('')
   const [state, setState] = useState<SearchState>({ status: 'idle' })
+  const manualSearch = useRef(false)
   const inputId = useId()
   const messageId = useId()
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function findNearby() {
+      try {
+        const origin = await getCurrentLocation()
+        if (cancelled || manualSearch.current) return
+
+        const result = await searchMasjids({ lat: origin.lat, lng: origin.lng })
+        if (cancelled || manualSearch.current) return
+
+        if (result.origin) saveArea({ label: 'your location', ...result.origin })
+        setState({ status: 'done', query: 'your location', masjids: result.masjids, origin })
+      } catch {
+        // Location is optional. Visitors can still search by address or try Near me.
+      }
+    }
+
+    void findNearby()
+    return () => { cancelled = true }
+  }, [])
 
   async function runSearch(params: MasjidSearchParams, label: string, origin?: { lat: number; lng: number }) {
     setState({ status: 'loading' })
@@ -35,6 +58,7 @@ export function LocationSearch() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    manualSearch.current = true
     const query = location.trim()
     if (!query) {
       setState({ status: 'error', message: 'Enter a city, address or postal code to search.' })
@@ -44,6 +68,7 @@ export function LocationSearch() {
   }
 
   async function handleUseLocation() {
+    manualSearch.current = true
     setState({ status: 'loading' })
     try {
       const here = await getCurrentLocation()
@@ -154,7 +179,7 @@ function SearchResults({
         {masjids.length} {masjids.length === 1 ? 'masjid' : 'masjids'} near {query}
       </p>
       <ul className="mt-1 divide-y divide-border">
-        {masjids.slice(0, 3).map((m) => (
+        {masjids.slice(0, 3).map((m, index) => (
           <li key={m.id}>
             <Link
               href={`/masjids/${m.id}`}
@@ -162,6 +187,7 @@ function SearchResults({
             >
               <span className="min-w-0">
                 <span className="block truncate font-semibold text-navy">{m.name}</span>
+                {index === 0 && <span className="block text-xs font-semibold text-teal-dark">Closest masjid</span>}
                 <span className="block truncate text-sm text-muted-foreground">
                   {[m.address, m.city].filter(Boolean).join(', ')}
                 </span>
