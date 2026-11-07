@@ -9,6 +9,12 @@ import { DAILY_PRAYERS, formatCountdown, getNextPrayer } from '@/lib/prayer'
 import type { CommunityEvent, PrayerTimes } from '@/lib/types'
 import { inputClass, secondaryButton } from '@/lib/site'
 
+const tileColors = {
+  Islamic: { label: 'Islamic observance', tile: 'border-emerald-300 bg-emerald-50', badge: 'bg-emerald-100 text-emerald-900' },
+  Holiday: { label: 'Public holiday', tile: 'border-amber-300 bg-amber-50', badge: 'bg-amber-100 text-amber-950' },
+  Masjid: { label: 'Masjid event', tile: 'border-violet-300 bg-violet-50', badge: 'bg-violet-100 text-violet-900' },
+}
+
 const DAY = 86400000
 const defaultPlace = { label: 'Toronto, Ontario, Canada', city: 'Toronto', lat: 43.65348, lng: -79.38393, country: 'CA', region: 'CA-ON' }
 type Place = Omit<typeof defaultPlace, 'country' | 'region'> & { country?: string; region?: string }
@@ -211,21 +217,21 @@ export function Calendar({ events, masjidLocations }: {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-      <section className="relative overflow-hidden rounded-3xl bg-navy px-5 py-8 text-white sm:p-10">
+      <section className="relative overflow-hidden rounded-3xl border border-indigo-900 bg-linear-to-br from-[#102856] via-[#233773] to-[#075b62] px-5 py-8 text-white shadow-lg sm:p-10">
         <GeometricPattern className="pointer-events-none absolute -right-10 -top-12 size-80 text-white/10" />
         <div className="relative">
           <h1 className="text-sm font-semibold uppercase tracking-widest text-mint">Hijri &amp; Gregorian Calendar</h1>
           <p className="mt-3 text-3xl font-extrabold sm:text-5xl">{today === null ? 'Loading date…' : hijri.format(today + offset * DAY)}</p>
           {today !== null && <p className="mt-2 text-white/80">{gregorian.format(today)} · {place?.label ?? 'Selected time zone'}</p>}
           <dl className="mt-8 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl bg-white/10 p-4"><dt className="text-sm text-mint">Local time</dt><dd className="mt-1 font-semibold tabular-nums">{localTime ?? '—'}</dd></div>
-            <div className="rounded-2xl bg-white/10 p-4"><dt className="text-sm text-mint">Next prayer</dt><dd className="mt-1 font-semibold">{nextPrayer ? `${nextPrayer.label} · ${formatCountdown(nextPrayer.minutesUntil)}` : '—'}</dd></div>
-            <div className="rounded-2xl bg-white/10 p-4"><dt className="text-sm text-mint">Next Islamic observance</dt><dd className="mt-1 font-semibold">{upcoming[0] ? `${upcoming[0].title} · ${gregorian.format(upcoming[0].date)}` : '—'}</dd></div>
+            <div className="rounded-2xl border border-sky-300/40 bg-sky-300/15 p-4"><dt className="text-sm text-white/90">Local time</dt><dd className="mt-1 font-semibold tabular-nums">{localTime ?? '—'}</dd></div>
+            <div className="rounded-2xl border border-emerald-300/40 bg-emerald-300/15 p-4"><dt className="text-sm text-white/90">Next prayer</dt><dd className="mt-1 font-semibold">{nextPrayer ? `${nextPrayer.label} · ${formatCountdown(nextPrayer.minutesUntil)}` : '—'}</dd></div>
+            <div className="rounded-2xl border border-amber-300/40 bg-amber-300/15 p-4"><dt className="text-sm text-white/90">Next Islamic observance</dt><dd className="mt-1 font-semibold">{upcoming[0] ? `${upcoming[0].title} · ${gregorian.format(upcoming[0].date)}` : '—'}</dd></div>
           </dl>
         </div>
       </section>
 
-      <section className="rounded-3xl border border-border bg-white p-4 shadow-sm sm:p-7" aria-labelledby="calendar-month">
+      <section className="rounded-3xl border border-slate-300 bg-white p-3 shadow-lg shadow-slate-200/60 sm:p-7" aria-labelledby="calendar-month">
         <form onSubmit={selectCity} className="flex flex-wrap items-end gap-3">
           <label className="min-w-0 flex-1 basis-48 font-semibold">City
             <input className={inputClass} value={city} onChange={event => setCity(event.target.value)}
@@ -251,8 +257,8 @@ export function Calendar({ events, masjidLocations }: {
           </label>
         </div>
         <div className="mt-6 flex flex-wrap gap-2" aria-label="Calendar view">
-          <button type="button" className={secondaryButton} aria-pressed={isHijri} onClick={() => setIsHijri(true)}>Hijri month</button>
-          <button type="button" className={secondaryButton} aria-pressed={!isHijri} onClick={() => setIsHijri(false)}>Gregorian month</button>
+          <button type="button" className={`${secondaryButton} aria-pressed:border-indigo-800 aria-pressed:bg-indigo-800 aria-pressed:text-white`} aria-pressed={isHijri} onClick={() => setIsHijri(true)}>Hijri month</button>
+          <button type="button" className={`${secondaryButton} aria-pressed:border-indigo-800 aria-pressed:bg-indigo-800 aria-pressed:text-white`} aria-pressed={!isHijri} onClick={() => setIsHijri(false)}>Gregorian month</button>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <h2 id="calendar-month" className="text-2xl font-bold text-navy" aria-live="polite">{title}</h2>
@@ -262,25 +268,25 @@ export function Calendar({ events, masjidLocations }: {
             <button className={secondaryButton} onClick={() => { setAnchor(bounds.end); setSelectedDay(null) }}>Next</button>
           </div>}
         </div>
-        <p className="mt-4 text-xs text-muted-foreground">
-          <span className="font-bold text-teal-dark">● Islamic observance</span>{' · '}
-          <span className="font-bold text-navy">● Public holiday</span>{' · '}
-          <span className="font-bold text-purple">● Masjid event</span>
-        </p>
-        {bounds && <div className="mt-2 grid grid-cols-7 rounded-xl border border-border">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <div key={day} className="bg-surface p-2 text-center text-xs font-semibold">{day}</div>)}
-          {Array.from({ length: new Date(bounds.start).getUTCDay() }, (_, index) => <div key={index} className="border-t border-border" aria-hidden="true" />)}
+        <ul aria-label="Calendar legend" className="mt-4 flex flex-wrap gap-2">
+          {Object.values(tileColors).map(({ label, tile, badge }) => (
+            <li key={label} className={`rounded-full border px-2.5 py-1 text-xs font-bold ${tile} ${badge}`}>{label}</li>
+          ))}
+        </ul>
+        {bounds && <div className="mt-3 grid grid-cols-7 gap-1 rounded-2xl border border-slate-300 bg-slate-100 p-1 sm:gap-2 sm:p-2">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <div key={day} className="rounded-lg border border-indigo-200 bg-indigo-100 px-0.5 py-2 text-center text-xs font-bold text-indigo-950">{day}</div>)}
+          {Array.from({ length: new Date(bounds.start).getUTCDay() }, (_, index) => <div key={index} className="rounded-lg border border-dashed border-slate-300" aria-hidden="true" />)}
           {days.map(day => {
             const items = entries(day)
             const types = [...new Set(items.map(item => item.type === 'Islamic observance' ? 'Islamic' : item.type === 'Masjid event' ? 'Masjid' : 'Holiday'))]
-            return <div key={day} className="group relative min-w-0 border-t border-border">
+            return <div key={day} className="group relative min-w-0">
               <button type="button" aria-current={day === today ? 'date' : undefined} aria-pressed={day === activeDay}
                 aria-label={`${gregorian.format(day)}${items.length ? ': ' + items.map(item => item.name).join(', ') : ''}`}
                 onClick={() => setSelectedDay(day)}
-                className={`h-full min-h-16 w-full px-1 py-2 text-center hover:bg-surface focus-visible:outline focus-visible:outline-teal sm:min-h-20 sm:px-2 ${day === activeDay ? 'bg-accent ring-1 ring-inset ring-teal' : ''}`}>
-                <span className="block font-bold text-navy">{isHijri ? hijriPart(day, offset, 'day') : new Date(day).getUTCDate()}</span>
+                className={`h-full min-h-16 w-full rounded-lg border px-0.5 py-2 text-center transition hover:border-indigo-600 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700 sm:min-h-24 sm:px-2 ${types.length ? tileColors[types[0]].tile : 'border-slate-300 bg-white'} ${day === activeDay ? 'ring-2 ring-inset ring-indigo-700' : ''}`}>
+                <span className={`mx-auto grid size-6 place-items-center rounded-full font-bold ${day === today ? 'bg-indigo-800 text-white' : 'text-navy'}`}>{isHijri ? hijriPart(day, offset, 'day') : new Date(day).getUTCDate()}</span>
                 <span className="block truncate text-[10px] text-muted-foreground sm:text-xs">{isHijri ? gregorian.format(day).replace(/,? \d{4}$/, '') : `${hijriPart(day, offset, 'day')} ${hijriPart(day, offset, 'month')}`}</span>
-                {types.map(type => <span key={type} className={`mx-0.5 inline-block rounded-full px-0.5 text-[10px] font-bold sm:px-1 ${type === 'Islamic' ? 'text-teal-dark' : type === 'Masjid' ? 'text-purple' : 'text-navy'}`} aria-hidden="true"><span className="sm:hidden">●</span><span className="hidden sm:inline">{type}</span></span>)}
+                {types.map(type => <span key={type} className={`mx-0.5 inline-block rounded-full px-0.5 text-[10px] font-bold sm:px-1 ${tileColors[type].badge}`} aria-hidden="true"><span className="sm:hidden">●</span><span className="hidden sm:inline">{type}</span></span>)}
               </button>
               {items.length > 0 && <div aria-hidden="true" className="pointer-events-none absolute bottom-full left-0 z-10 hidden w-36 rounded-lg bg-navy p-2 text-xs text-white shadow-lg group-nth-[7n]:left-auto group-nth-[7n]:right-0 sm:group-hover:block sm:group-focus-within:block">
                 {items.map((item, index) => <p key={index}>{item.name}</p>)}
@@ -288,7 +294,7 @@ export function Calendar({ events, masjidLocations }: {
             </div>
           })}
         </div>}
-        {activeDay !== undefined && <div className="mt-4 rounded-xl bg-surface p-4" aria-live="polite">
+        {activeDay !== undefined && <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4" aria-live="polite">
           <h3 className="font-bold text-navy">{gregorian.format(activeDay)} · {hijri.format(activeDay + offset * DAY)}</h3>
           {entries(activeDay).length ? <ul className="mt-2 space-y-2 text-sm">{entries(activeDay).map((item, index) => <li key={index}>
             <span className="font-semibold text-navy">{'href' in item && typeof item.href === 'string' ? <Link href={item.href} className="underline">{item.name}</Link> : item.name}</span>
@@ -298,7 +304,7 @@ export function Calendar({ events, masjidLocations }: {
         {monthHolidays.length > 0 && <div className="mt-5">
           <h3 className="font-bold text-navy">Public holidays this month</h3>
           <ul className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
-            {monthHolidays.map((holiday, index) => <li key={index} className="rounded-lg bg-surface px-3 py-2">
+            {monthHolidays.map((holiday, index) => <li key={index} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2">
               <time dateTime={holiday.date} className="font-semibold text-navy">{gregorian.format(new Date(holiday.date))}</time>
               {' · '}{holiday.name} <span className="text-muted-foreground">({holiday.scope})</span>
             </li>)}
@@ -311,7 +317,7 @@ export function Calendar({ events, masjidLocations }: {
       <section aria-labelledby="islamic-events">
         <h2 id="islamic-events" className="text-2xl font-bold text-navy">Upcoming Islamic observances</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {upcoming.map(item => <article key={item.date} className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+          {upcoming.map(item => <article key={item.date} className="overflow-hidden rounded-2xl border border-emerald-300 bg-emerald-50 shadow-sm">
             <Image src="/images/hero-mosque.png" alt="" width={640} height={240} className="h-28 w-full object-cover" />
             <div className="p-5">
               <time dateTime={dateKey(item.date)} className="text-sm font-semibold text-teal-dark">{gregorian.format(item.date)}</time>
@@ -322,7 +328,7 @@ export function Calendar({ events, masjidLocations }: {
         </div>
       </section>
 
-      <section aria-labelledby="community-events" className="rounded-2xl border border-border bg-white p-5 sm:p-7">
+      <section aria-labelledby="community-events" className="rounded-2xl border border-violet-300 bg-violet-50 p-5 sm:p-7">
         <h2 id="community-events" className="text-2xl font-bold text-navy">Community events{place?.city ? ` near ${place.city}` : ''}</h2>
         {upcomingCommunity.length ? <ul className="mt-4 grid gap-4 sm:grid-cols-2">{upcomingCommunity.map(event => <li key={event.id} className="rounded-xl bg-surface p-4">
           <Link href={`/events/${event.id}`} className="font-bold text-navy underline">{event.title}</Link>
@@ -332,9 +338,9 @@ export function Calendar({ events, masjidLocations }: {
         {place && <Link className="mt-4 inline-block font-semibold text-teal-dark underline" href={`/masjids?lat=${place.lat}&lng=${place.lng}&near=${encodeURIComponent(place.label)}`}>Find nearby masjids</Link>}
       </section>
 
-      <section aria-labelledby="calendar-prayers" className="rounded-2xl border border-border bg-surface p-5 sm:p-7">
+      <section aria-labelledby="calendar-prayers" className="rounded-2xl border border-sky-300 bg-sky-50 p-5 sm:p-7">
         <h2 id="calendar-prayers" className="text-2xl font-bold text-navy">Today’s prayer times</h2>
-        {times ? <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">{DAILY_PRAYERS.map(prayer => <div key={prayer.key} className={`rounded-xl p-3 text-center ${nextPrayer?.key === prayer.key ? 'bg-navy text-white' : 'bg-white text-navy'}`}>
+        {times ? <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">{DAILY_PRAYERS.map(prayer => <div key={prayer.key} className={`rounded-xl border p-3 text-center ${nextPrayer?.key === prayer.key ? 'border-indigo-900 bg-indigo-800 text-white' : 'border-sky-300 bg-white text-navy'}`}>
           <dt className="text-sm font-semibold">{prayer.label}</dt><dd className="mt-1 font-bold tabular-nums">{times[prayer.key]}</dd>
         </div>)}</dl> : <p className="mt-2 text-sm text-muted-foreground">{!place ? 'Set a city to see prayer times.' : prayers?.key === prayerKey ? 'Prayer times are temporarily unavailable.' : 'Loading prayer times…'}</p>}
         <p className="mt-3 text-xs text-muted-foreground">Calculated for the selected city. Check your masjid for congregation times.</p>
