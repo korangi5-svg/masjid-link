@@ -84,6 +84,8 @@ export function Calendar({ events, masjidLocations }: {
   const [holidayResult, setHolidayResult] = useState<{ key: string; holidays: Holiday[]; incomplete: boolean } | null>(null)
   const [prayers, setPrayers] = useState<{ key: string; times: PrayerTimes | null } | null>(null)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const [notes, setNotes] = useState<Record<string, string>>({})
+  const [notesReady, setNotesReady] = useState(false)
   const [cityError, setCityError] = useState('')
   const [searching, setSearching] = useState(false)
   const [zone, setZone] = useState('America/Toronto')
@@ -98,6 +100,28 @@ export function Calendar({ events, masjidLocations }: {
     const timer = window.setInterval(() => setNow(new Date()), 15000)
     return () => window.clearInterval(timer)
   }, [])
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem('masjid-link-calendar-notes-v1')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) setNotes(parsed as Record<string, string>)
+      }
+    } catch {
+      // Keep the calendar usable if browser storage is unavailable or malformed.
+    }
+    setNotesReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!notesReady) return
+    try {
+      window.localStorage.setItem('masjid-link-calendar-notes-v1', JSON.stringify(notes))
+    } catch {
+      // Notes remain editable for the current session if storage is unavailable.
+    }
+  }, [notes, notesReady])
 
   async function selectCity(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -310,6 +334,18 @@ export function Calendar({ events, masjidLocations }: {
             <span className="font-semibold text-navy">{'href' in item && typeof item.href === 'string' ? <Link href={item.href} className="underline">{item.name}</Link> : item.name}</span>
             <span className="text-muted-foreground"> · {item.type}{item.detail ? ` · ${item.detail}` : ''}</span>
           </li>)}</ul> : <p className="mt-1 text-sm text-muted-foreground">No events or holidays listed for this date.</p>}
+          <div className="mt-4 border-t border-indigo-200 pt-4">
+            <label htmlFor={`calendar-note-${dateKey(activeDay)}`} className="font-semibold text-navy">Personal note</label>
+            <textarea
+              id={`calendar-note-${dateKey(activeDay)}`}
+              className={`${inputClass} mt-2 min-h-24 resize-y`}
+              value={notes[dateKey(activeDay)] ?? ''}
+              onChange={event => setNotes(current => ({ ...current, [dateKey(activeDay)]: event.target.value }))}
+              maxLength={2000}
+              placeholder="Add a note for this date…"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">Saved in this browser for this date.</p>
+          </div>
         </div>}
         {monthHolidays.length > 0 && <div className="mt-5">
           <h3 className="font-bold text-navy">Public holidays this month</h3>
