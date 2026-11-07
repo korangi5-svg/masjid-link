@@ -9,6 +9,16 @@ import { DAILY_PRAYERS, formatCountdown, getNextPrayer } from '@/lib/prayer'
 import type { CommunityEvent, PrayerTimes } from '@/lib/types'
 import { inputClass, secondaryButton } from '@/lib/site'
 
+const weekdays = [
+  { label: 'Sun', colors: 'border-rose-400 bg-rose-200 text-rose-950' },
+  { label: 'Mon', colors: 'border-sky-400 bg-sky-200 text-sky-950' },
+  { label: 'Tue', colors: 'border-emerald-400 bg-emerald-200 text-emerald-950' },
+  { label: 'Wed', colors: 'border-amber-400 bg-amber-200 text-amber-950' },
+  { label: 'Thu', colors: 'border-violet-400 bg-violet-200 text-violet-950' },
+  { label: 'Fri', colors: 'border-teal-400 bg-teal-200 text-teal-950' },
+  { label: 'Sat', colors: 'border-indigo-400 bg-indigo-200 text-indigo-950' },
+]
+
 const tileColors = {
   Islamic: { label: 'Islamic observance', tile: 'border-emerald-300 bg-emerald-50', badge: 'bg-emerald-100 text-emerald-900' },
   Holiday: { label: 'Public holiday', tile: 'border-amber-300 bg-amber-50', badge: 'bg-amber-100 text-amber-950' },
@@ -274,7 +284,9 @@ export function Calendar({ events, masjidLocations }: {
           ))}
         </ul>
         {bounds && <div className="mt-3 grid grid-cols-7 gap-1 rounded-2xl border border-slate-300 bg-slate-100 p-1 sm:gap-2 sm:p-2">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <div key={day} className="rounded-lg border border-indigo-200 bg-indigo-100 px-0.5 py-2 text-center text-xs font-bold text-indigo-950">{day}</div>)}
+          {weekdays.map(({ label, colors }) => (
+            <div key={label} className={`rounded-lg border px-0.5 py-2 text-center text-xs font-bold ${colors}`}>{label}</div>
+          ))}
           {Array.from({ length: new Date(bounds.start).getUTCDay() }, (_, index) => <div key={index} className="rounded-lg border border-dashed border-slate-300" aria-hidden="true" />)}
           {days.map(day => {
             const items = entries(day)
