@@ -20,10 +20,20 @@ const weekdays = [
 ]
 
 const tileColors = {
-  Islamic: { label: 'Islamic observance', tile: 'border-emerald-300 bg-emerald-50', badge: 'bg-emerald-100 text-emerald-900' },
-  Holiday: { label: 'Public holiday', tile: 'border-amber-300 bg-amber-50', badge: 'bg-amber-100 text-amber-950' },
-  Masjid: { label: 'Masjid event', tile: 'border-violet-300 bg-violet-50', badge: 'bg-violet-100 text-violet-900' },
+  Islamic: { label: 'Islamic observance', tile: 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40', badge: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-100' },
+  Holiday: { label: 'Public holiday', tile: 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40', badge: 'bg-amber-100 text-amber-950 dark:bg-amber-900/60 dark:text-amber-100' },
+  Masjid: { label: 'Masjid event', tile: 'border-violet-300 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/40', badge: 'bg-violet-100 text-violet-900 dark:bg-violet-900/60 dark:text-violet-100' },
+  Note: { label: 'Personal note', tile: 'border-sky-300 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/40', badge: 'bg-sky-100 text-sky-900 dark:bg-sky-900/60 dark:text-sky-100' },
 }
+
+const filterOptions = [
+  { key: 'Holiday', label: 'Canadian holidays' },
+  { key: 'Islamic', label: 'Islamic observances' },
+  { key: 'Masjid', label: 'Masjid events' },
+  { key: 'Note', label: 'Personal notes' },
+] as const
+
+type FilterKey = typeof filterOptions[number]['key']
 
 const DAY = 86400000
 const defaultPlace = { label: 'Toronto, Ontario, Canada', city: 'Toronto', lat: 43.65348, lng: -79.38393, country: 'CA', region: 'CA-ON' }
@@ -33,6 +43,8 @@ type Holiday = { date: string; name: string; scope: string }
 const observances = [
   { month: 1, day: 1, title: 'Islamic New Year', description: 'The first day of Muharram marks the start of a new Hijri year.' },
   { month: 1, day: 10, title: 'Ashura', description: 'The tenth day of Muharram, observed in different ways across Muslim communities.' },
+  { month: 3, day: 12, title: 'Mawlid al-Nabawi', description: 'A remembrance of the Prophet Muhammad’s birth, observed by many Muslim communities.' },
+  { month: 7, day: 27, title: 'Isra and Mi’raj', description: 'A remembrance of the Night Journey and Ascension, observed by many Muslim communities.' }
   { month: 9, day: 1, title: 'Start of Ramadan', description: 'The first day of the month of fasting, prayer, and reflection.' },
   { month: 10, day: 1, title: 'Eid al-Fitr', description: 'The celebration marking the end of Ramadan. Check with your masjid for Eid prayer details.' },
   { month: 12, day: 9, title: 'Day of Arafah', description: 'Pilgrims gather at Arafah during Hajj.' },
@@ -52,6 +64,7 @@ function getObservance(day: number, offset: number) {
 const hijri = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' })
 const gregorian = new Intl.DateTimeFormat('en-CA', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })
 const gregorianMonth = new Intl.DateTimeFormat('en-CA', { timeZone: 'UTC', month: 'long', year: 'numeric' })
+const gregorianMonths = Array.from({ length: 12 }, (_, month) => new Intl.DateTimeFormat('en-CA', { timeZone: 'UTC', month: 'long' }).format(new Date(Date.UTC(2024, month, 1))))
 
 // Represent local calendar dates at UTC midnight so daylight saving never skips a grid cell.
 function localDay(now: Date, zone: string) {
@@ -85,7 +98,11 @@ export function Calendar({ events, masjidLocations }: {
   const [prayers, setPrayers] = useState<{ key: string; times: PrayerTimes | null } | null>(null)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [notes, setNotes] = useState<Record<string, string>>({})
+  const [noteDraft, setNoteDraft] = useState('')
   const [notesReady, setNotesReady] = useState(false)
+  const [darkMode, setDarkMode] = useState(false)
+  const [filters, setFilters] = useState<Record<FilterKey, boolean>>({ Holiday: true, Islamic: true, Masjid: true, Note: true })
+  const [preferencesReady, setPreferencesReady] = useState(false)
   const [cityError, setCityError] = useState('')
   const [searching, setSearching] = useState(false)
   const [zone, setZone] = useState('America/Toronto')
@@ -122,6 +139,30 @@ export function Calendar({ events, masjidLocations }: {
       // Notes remain editable for the current session if storage is unavailable.
     }
   }, [notes, notesReady])
+
+  useEffect(() => {
+    try {
+      setDarkMode(window.localStorage.getItem('masjid-link-calendar-theme-v1') === 'dark')
+      const savedFilters = window.localStorage.getItem('masjid-link-calendar-filters-v1')
+      if (savedFilters) {
+        const parsed = JSON.parse(savedFilters)
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) setFilters(current => ({ ...current, ...parsed }))
+      }
+    } catch {
+      // Use defaults if saved preferences are unavailable.
+    }
+    setPreferencesReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!preferencesReady) return
+    try {
+      window.localStorage.setItem('masjid-link-calendar-theme-v1', darkMode ? 'dark' : 'light')
+      window.localStorage.setItem('masjid-link-calendar-filters-v1', JSON.stringify(filters))
+    } catch {
+      // Preferences remain available for this session if storage is unavailable.
+    }
+  }, [darkMode, filters, preferencesReady])
 
   async function selectCity(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -162,6 +203,9 @@ export function Calendar({ events, masjidLocations }: {
     ? `${hijriPart(bounds.start, offset, 'month')} ${hijriPart(bounds.start, offset, 'year')} AH`
     : gregorianMonth.format(bounds.start)
     : 'Loading calendar…'
+  const calendarYear = bounds ? new Date(bounds.start).getUTCFullYear() : 0
+  const calendarMonth = bounds ? new Date(bounds.start).getUTCMonth() : 0
+  const yearOptions = bounds ? Array.from({ length: 21 }, (_, index) => calendarYear - 10 + index) : []
 
   const year = bounds ? new Date(bounds.start).getUTCFullYear() : 0
   const endYear = bounds ? new Date(bounds.end - DAY).getUTCFullYear() : 0
@@ -237,6 +281,11 @@ export function Calendar({ events, masjidLocations }: {
   const upcomingCommunity = today === null ? [] : cityEvents.filter(event => event.date >= dateKey(today)).slice(0, 6)
   const activeDay = bounds && selectedDay !== null && selectedDay >= bounds.start && selectedDay < bounds.end
     ? selectedDay : bounds && today !== null && today >= bounds.start && today < bounds.end ? today : bounds?.start
+  useEffect(() => {
+    if (activeDay !== undefined) setNoteDraft(notes[dateKey(activeDay)] ?? '')
+  }, [activeDay, notes])
+  const categoryFor = (item: { type: string }): FilterKey => item.type === 'Islamic observance'
+    ? 'Islamic' : item.type === 'Masjid event' ? 'Masjid' : item.type === 'Personal note' ? 'Note' : 'Holiday'
   const entries = (day: number) => {
     const key = dateKey(day)
     const observance = getObservance(day, offset)
@@ -249,8 +298,16 @@ export function Calendar({ events, masjidLocations }: {
     ]
   }
 
+  const displayEntries = (day: number) => {
+    const visible = entries(day).filter(item => filters[categoryFor(item)])
+    const note = (notes[dateKey(day)] ?? '').trim()
+    if (!filters.Note || !note) return visible
+    const preview = note.length > 36 ? note.slice(0, 36).trimEnd() + '…' : note
+    return [...visible, { name: preview, type: 'Personal note', detail: 'Saved in this browser' }]
+  }
+
   return (
-    <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+    <div className={'mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8 ' + (darkMode ? 'dark calendar-dark' : '')}>
       <section className="relative overflow-hidden rounded-3xl border border-indigo-900 bg-linear-to-br from-[#102856] via-[#233773] to-[#075b62] px-5 py-8 text-white shadow-lg sm:p-10">
         <GeometricPattern className="pointer-events-none absolute -right-10 -top-12 size-80 text-white/10" />
         <div className="relative">
@@ -265,7 +322,7 @@ export function Calendar({ events, masjidLocations }: {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-slate-300 bg-white p-3 shadow-lg shadow-slate-200/60 sm:p-7" aria-labelledby="calendar-month">
+      <section className="rounded-3xl border border-slate-300 bg-white p-3 shadow-lg shadow-slate-200/60 sm:p-7 dark:border-slate-700 dark:bg-slate-900" aria-labelledby="calendar-month">
         <form onSubmit={selectCity} className="flex flex-wrap items-end gap-3">
           <label className="min-w-0 flex-1 basis-48 font-semibold">City
             <input className={inputClass} value={city} onChange={event => setCity(event.target.value)}
@@ -293,9 +350,20 @@ export function Calendar({ events, masjidLocations }: {
         <div className="mt-6 flex flex-wrap gap-2" aria-label="Calendar view">
           <button type="button" className={`${secondaryButton} aria-pressed:border-indigo-800 aria-pressed:bg-indigo-800 aria-pressed:text-white`} aria-pressed={isHijri} onClick={() => setIsHijri(true)}>Hijri month</button>
           <button type="button" className={`${secondaryButton} aria-pressed:border-indigo-800 aria-pressed:bg-indigo-800 aria-pressed:text-white`} aria-pressed={!isHijri} onClick={() => setIsHijri(false)}>Gregorian month</button>
+          <button type="button" className={secondaryButton + ' ml-auto'} aria-pressed={darkMode} aria-label={'Switch to ' + (darkMode ? 'light mode' : 'dark mode')} onClick={() => setDarkMode(value => !value)}>{darkMode ? 'Light mode' : 'Dark mode'}</button>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <h2 id="calendar-month" className="text-2xl font-bold text-navy" aria-live="polite">{title}</h2>
+          {!isHijri && bounds && <div className="flex gap-2">
+            <label className="sr-only" htmlFor="calendar-month-select">Calendar month</label>
+            <select id="calendar-month-select" aria-label="Calendar month" className={inputClass + ' w-36'} value={calendarMonth} onChange={event => { setAnchor(Date.UTC(calendarYear, Number(event.target.value), 1)); setSelectedDay(null) }}>
+              {gregorianMonths.map((month, index) => <option key={month} value={index}>{month}</option>)}
+            </select>
+            <label className="sr-only" htmlFor="calendar-year-select">Calendar year</label>
+            <select id="calendar-year-select" aria-label="Calendar year" className={inputClass + ' w-24'} value={calendarYear} onChange={event => { setAnchor(Date.UTC(Number(event.target.value), calendarMonth, 1)); setSelectedDay(null) }}>
+              {yearOptions.map(year => <option key={year} value={year}>{year}</option>)}
+            </select>
+          </div>}
           {bounds && <div className="flex flex-wrap gap-2">
             <button className={secondaryButton} onClick={() => { setAnchor(bounds.start - DAY); setSelectedDay(null) }}>Previous</button>
             <button className={secondaryButton} onClick={() => { setAnchor(null); setSelectedDay(null) }}>Today</button>
@@ -307,14 +375,25 @@ export function Calendar({ events, masjidLocations }: {
             <li key={label} className={`rounded-full border px-2.5 py-1 text-xs font-bold ${tile} ${badge}`}>{label}</li>
           ))}
         </ul>
-        {bounds && <div className="mt-3 grid grid-cols-7 gap-1 rounded-2xl border border-slate-300 bg-slate-100 p-1 sm:gap-2 sm:p-2">
+        <fieldset className="mt-3">
+          <legend className="mb-2 text-sm font-semibold text-navy">Show on calendar</legend>
+          <div className="flex flex-wrap gap-2">
+            {filterOptions.map(({ key, label }) => (
+              <label key={key} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-navy dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                <input type="checkbox" className="size-4 accent-emerald-600" checked={filters[key]} onChange={() => setFilters(current => ({ ...current, [key]: !current[key] }))} />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        {bounds && <div className="mt-3 grid grid-cols-7 gap-1 rounded-2xl border border-slate-300 bg-slate-100 p-1 sm:gap-2 sm:p-2 dark:border-slate-700 dark:bg-slate-800">
           {weekdays.map(({ label, colors }) => (
             <div key={label} className={`rounded-lg border px-0.5 py-2 text-center text-xs font-bold ${colors}`}>{label}</div>
           ))}
-          {Array.from({ length: new Date(bounds.start).getUTCDay() }, (_, index) => <div key={index} className="rounded-lg border border-dashed border-slate-300" aria-hidden="true" />)}
+          {Array.from({ length: new Date(bounds.start).getUTCDay() }, (_, index) => <div key={index} className="rounded-lg border border-dashed border-slate-300 dark:border-slate-600" aria-hidden="true" />)}
           {days.map(day => {
-            const items = entries(day)
-            const types = [...new Set(items.map(item => item.type === 'Islamic observance' ? 'Islamic' : item.type === 'Masjid event' ? 'Masjid' : 'Holiday'))]
+            const items = displayEntries(day)
+            const types = [...new Set(items.map(item => categoryFor(item)))]
             return <div key={day} className="group relative min-w-0">
               <button type="button" aria-current={day === today ? 'date' : undefined} aria-pressed={day === activeDay}
                 aria-label={`${gregorian.format(day)}${items.length ? ': ' + items.map(item => item.name).join(', ') : ''}`}
@@ -322,35 +401,56 @@ export function Calendar({ events, masjidLocations }: {
                 className={`h-full min-h-20 w-full rounded-lg border px-0.5 py-2 text-center transition hover:border-indigo-600 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700 sm:min-h-28 sm:px-2 ${types.length ? tileColors[types[0]].tile : 'border-slate-300 bg-white'} ${day === activeDay ? 'ring-2 ring-inset ring-indigo-700' : ''}`}>
                 <span className={`mx-auto grid size-6 place-items-center rounded-full font-bold ${day === today ? 'bg-indigo-800 text-white' : 'text-navy'}`}>{isHijri ? hijriPart(day, offset, 'day') : new Date(day).getUTCDate()}</span>
                 <span className="block truncate text-[10px] text-muted-foreground sm:text-xs">{isHijri ? gregorian.format(day).replace(/,? \d{4}$/, '') : `${hijriPart(day, offset, 'day')} ${hijriPart(day, offset, 'month')}`}</span>
-                {types.map(type => <span key={type} className={`mx-0.5 inline-block rounded-full px-0.5 text-[10px] font-bold sm:px-1 ${tileColors[type].badge}`} aria-hidden="true"><span className="sm:hidden">●</span><span className="hidden sm:inline">{type}</span></span>)}
+                {types.map(type => <span key={type} className={`mx-0.5 inline-block rounded-full px-0.5 text-[10px] font-bold sm:px-1 ${tileColors[type].badge}`} aria-hidden="true"><span className="sm:hidden">●</span><span className="hidden sm:inline">{type === 'Note' ? 'Note' : type}</span></span>)}
                 {items.length > 0 && <span aria-hidden="true" className="mt-1 block space-y-0.5 text-[9px] font-semibold leading-tight text-slate-700 sm:text-xs">{items.map((item, index) => <span key={index} className="block break-words">{item.name}</span>)}</span>}
               </button>
             </div>
           })}
         </div>}
-        {activeDay !== undefined && <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4" aria-live="polite">
+        {activeDay !== undefined && <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/50" aria-live="polite">
           <h3 className="font-bold text-navy">{gregorian.format(activeDay)} · {hijri.format(activeDay + offset * DAY)}</h3>
           {entries(activeDay).length ? <ul className="mt-2 space-y-2 text-sm">{entries(activeDay).map((item, index) => <li key={index}>
             <span className="font-semibold text-navy">{'href' in item && typeof item.href === 'string' ? <Link href={item.href} className="underline">{item.name}</Link> : item.name}</span>
             <span className="text-muted-foreground"> · {item.type}{item.detail ? ` · ${item.detail}` : ''}</span>
           </li>)}</ul> : <p className="mt-1 text-sm text-muted-foreground">No events or holidays listed for this date.</p>}
           <div className="mt-4 border-t border-indigo-200 pt-4">
-            <label htmlFor={`calendar-note-${dateKey(activeDay)}`} className="font-semibold text-navy">Personal note</label>
+            <div className="flex items-center justify-between gap-2"><label htmlFor={`calendar-note-${dateKey(activeDay)}`} className="font-semibold text-navy">Personal notes &amp; reminders</label><span className="text-xs text-muted-foreground">{noteDraft.length}/250</span></div>
             <textarea
               id={`calendar-note-${dateKey(activeDay)}`}
               className={`${inputClass} mt-2 min-h-24 resize-y`}
-              value={notes[dateKey(activeDay)] ?? ''}
-              onChange={event => setNotes(current => ({ ...current, [dateKey(activeDay)]: event.target.value }))}
-              maxLength={2000}
-              placeholder="Add a note for this date…"
+              value={noteDraft}
+              onChange={event => setNoteDraft(event.target.value)}
+              maxLength={250}
+              placeholder="Add a personal note or reminder for this day…"
             />
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button type="button" className={secondaryButton} onClick={() => {
+                const key = dateKey(activeDay)
+                const value = noteDraft.trim()
+                setNotes(current => {
+                  const updated = { ...current }
+                  if (value) updated[key] = value
+                  else delete updated[key]
+                  return updated
+                })
+              }}>Save note</button>
+              {notes[dateKey(activeDay)] && <button type="button" className={secondaryButton} onClick={() => {
+                const key = dateKey(activeDay)
+                setNoteDraft('')
+                setNotes(current => {
+                  const updated = { ...current }
+                  delete updated[key]
+                  return updated
+                })
+              }}>Clear note</button>}
+            </div>
             <p className="mt-1 text-xs text-muted-foreground">Saved in this browser for this date.</p>
           </div>
         </div>}
-        {monthHolidays.length > 0 && <div className="mt-5">
+        {filters.Holiday && monthHolidays.length > 0 && <div className="mt-5">
           <h3 className="font-bold text-navy">Public holidays this month</h3>
           <ul className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
-            {monthHolidays.map((holiday, index) => <li key={index} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2">
+            {monthHolidays.map((holiday, index) => <li key={index} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/40">
               <time dateTime={holiday.date} className="font-semibold text-navy">{gregorian.format(new Date(holiday.date))}</time>
               {' · '}{holiday.name} <span className="text-muted-foreground">({holiday.scope})</span>
             </li>)}
@@ -360,10 +460,10 @@ export function Calendar({ events, masjidLocations }: {
         <p className="mt-2 text-xs text-muted-foreground" role="status">{!country ? 'Set a city with a supported country to see public holidays.' : !holidayData ? 'Loading public holidays…' : holidayData.incomplete ? 'Some public holiday data is unavailable for this location and month.' : ''}</p>
       </section>
 
-      <section aria-labelledby="islamic-events">
+      {filters.Islamic && <section aria-labelledby="islamic-events">
         <h2 id="islamic-events" className="text-2xl font-bold text-navy">Upcoming Islamic observances</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {upcoming.map(item => <article key={item.date} className="overflow-hidden rounded-2xl border border-emerald-300 bg-emerald-50 shadow-sm">
+          {upcoming.map(item => <article key={item.date} className="overflow-hidden rounded-2xl border border-emerald-300 bg-emerald-50 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/40">
             <Image src="/images/hero-mosque.png" alt="" width={640} height={240} className="h-28 w-full object-cover" />
             <div className="p-5">
               <time dateTime={dateKey(item.date)} className="text-sm font-semibold text-teal-dark">{gregorian.format(item.date)}</time>
@@ -372,9 +472,9 @@ export function Calendar({ events, masjidLocations }: {
             </div>
           </article>)}
         </div>
-      </section>
+      </section>}
 
-      <section aria-labelledby="community-events" className="rounded-2xl border border-violet-300 bg-violet-50 p-5 sm:p-7">
+      {filters.Masjid && <section aria-labelledby="community-events" className="rounded-2xl border border-violet-300 bg-violet-50 p-5 sm:p-7 dark:border-violet-800 dark:bg-violet-950/40">
         <h2 id="community-events" className="text-2xl font-bold text-navy">Community events{place?.city ? ` near ${place.city}` : ''}</h2>
         {upcomingCommunity.length ? <ul className="mt-4 grid gap-4 sm:grid-cols-2">{upcomingCommunity.map(event => <li key={event.id} className="rounded-xl bg-surface p-4">
           <Link href={`/events/${event.id}`} className="font-bold text-navy underline">{event.title}</Link>
@@ -382,9 +482,9 @@ export function Calendar({ events, masjidLocations }: {
           <p className="mt-2 text-sm text-muted-foreground">{event.description}</p>
         </li>)}</ul> : <p className="mt-2 text-sm text-muted-foreground">{place ? 'No upcoming masjid events are listed near this city.' : 'Set a city to see local masjid events.'}</p>}
         {place && <Link className="mt-4 inline-block font-semibold text-teal-dark underline" href={`/masjids?lat=${place.lat}&lng=${place.lng}&near=${encodeURIComponent(place.label)}`}>Find nearby masjids</Link>}
-      </section>
+      </section>}
 
-      <section aria-labelledby="calendar-prayers" className="rounded-2xl border border-sky-300 bg-sky-50 p-5 sm:p-7">
+      <section aria-labelledby="calendar-prayers" className="rounded-2xl border border-sky-300 bg-sky-50 p-5 sm:p-7 dark:border-sky-800 dark:bg-sky-950/40">
         <h2 id="calendar-prayers" className="text-2xl font-bold text-navy">Today’s prayer times</h2>
         {times ? <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">{DAILY_PRAYERS.map(prayer => <div key={prayer.key} className={`rounded-xl border p-3 text-center ${nextPrayer?.key === prayer.key ? 'border-indigo-900 bg-indigo-800 text-white' : 'border-sky-300 bg-white text-navy'}`}>
           <dt className="text-sm font-semibold">{prayer.label}</dt><dd className="mt-1 font-bold tabular-nums">{times[prayer.key]}</dd>
