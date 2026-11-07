@@ -3,6 +3,7 @@ import { eventsEnabled } from '@/lib/features'
 export const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/masjids', label: 'Masjids' },
+  { href: '/local-services', label: 'Local Services' },
   { href: '/events', label: 'Events' },
   { href: '/resources', label: 'Resources' },
   { href: '/daily-learning', label: 'Daily Learning' },
