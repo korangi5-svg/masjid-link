@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { CircleCheck, CircleAlert, X } from 'lucide-react'
@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils'
 type AuthState = { user: User | null; loading: boolean }
 
 const AuthContext = createContext<AuthState>({ user: null, loading: true })
+export const SignInRecitationContext = createContext<() => void>(() => {})
+const recitationUrl = 'https://everyayah.com/data/Alafasy_128kbps/001001.mp3'
 
 export function useAuth() {
   return useContext(AuthContext)
@@ -26,6 +28,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [state, setState] = useState<AuthState>({ user: null, loading: true })
   const [notice, setNotice] = useState<Notice | null>(null)
+  const audio = useRef<HTMLAudioElement>(null)
+  const [showRecitation, setShowRecitation] = useState(false)
+  const [audioError, setAudioError] = useState(false)
+
+  function playRecitation() {
+    if (!audio.current) return
+    setAudioError(false)
+    setShowRecitation(true)
+    void audio.current.play().catch(() => {
+      // Keep the player available if the browser requires a click.
+    })
+  }
+
+  function dismissRecitation() {
+    audio.current?.pause()
+    if (audio.current) audio.current.currentTime = 0
+    setShowRecitation(false)
+  }
 
   useEffect(() => {
     // Read the link's #fragment before Supabase consumes and clears it.
@@ -49,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       setState({ user: session?.user ?? null, loading: false })
+      if (event === 'SIGNED_OUT') dismissRecitation()
       // A reset link that lands anywhere else still needs the new-password form.
       if (event === 'PASSWORD_RECOVERY' && window.location.pathname !== '/reset-password') {
         router.replace('/reset-password')
@@ -60,7 +81,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={state}>
       {notice ? <AuthNotice notice={notice} onDismiss={() => setNotice(null)} /> : null}
-      {children}
+      <section hidden={!showRecitation} aria-label="Welcome recitation" className="bg-accent px-4 py-3 text-center">
+        <p lang="ar" dir="rtl" className="font-semibold">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+        <audio
+          ref={audio}
+          src={recitationUrl}
+          controls
+          preload="none"
+          aria-label="Play Bismillah recitation"
+          className="mx-auto my-2 max-w-full"
+          onEnded={dismissRecitation}
+          onError={() => setAudioError(true)}
+        />
+        {audioError && <p role="status">The recitation could not be loaded.</p>}
+        <p className="text-sm">
+          <a href="https://everyayah.com/" className="underline">Mishary Rashid Alafasy · EveryAyah</a>
+          <button type="button" onClick={dismissRecitation} className="ml-3 underline">Dismiss</button>
+        </p>
+      </section>
+      <SignInRecitationContext.Provider value={playRecitation}>{children}</SignInRecitationContext.Provider>
     </AuthContext.Provider>
   )
 }
