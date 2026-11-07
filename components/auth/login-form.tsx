@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState, type FormEvent } from 'react'
+import { useContext, useState, type FormEvent } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { FormAlert, TextField } from '@/components/forms/form-field'
 import { PasswordField } from '@/components/auth/password-field'
+import { SignInRecitationContext } from '@/components/auth/auth-provider'
 import { resendSignupConfirmation, signIn } from '@/lib/services/auth'
 import { focusRing, primaryButton } from '@/lib/site'
 import { cn } from '@/lib/utils'
@@ -13,6 +14,7 @@ import { hasErrors, validateEmail, type FieldErrors } from '@/lib/validation'
 
 export function LoginForm() {
   const router = useRouter()
+  const playRecitation = useContext(SignInRecitationContext)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
@@ -55,8 +57,12 @@ export function LoginForm() {
     setSubmitting(true)
     const result = await signIn(email.trim(), password, remember)
     setSubmitting(false)
-    if (result.ok) router.push('/dashboard')
-    else setServerError(result.error ?? 'Unable to log in.')
+    if (result.ok) {
+      playRecitation()
+      router.push('/dashboard')
+    } else {
+      setServerError(result.error ?? 'Unable to log in.')
+    }
   }
 
   return (
