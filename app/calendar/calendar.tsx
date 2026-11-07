@@ -44,7 +44,7 @@ const observances = [
   { month: 1, day: 1, title: 'Islamic New Year', description: 'The first day of Muharram marks the start of a new Hijri year.' },
   { month: 1, day: 10, title: 'Ashura', description: 'The tenth day of Muharram, observed in different ways across Muslim communities.' },
   { month: 3, day: 12, title: 'Mawlid al-Nabawi', description: 'A remembrance of the Prophet Muhammad’s birth, observed by many Muslim communities.' },
-  { month: 7, day: 27, title: 'Isra and Mi’raj', description: 'A remembrance of the Night Journey and Ascension, observed by many Muslim communities.' }
+  { month: 7, day: 27, title: 'Isra and Mi’raj', description: 'A remembrance of the Night Journey and Ascension, observed by many Muslim communities.' },
   { month: 9, day: 1, title: 'Start of Ramadan', description: 'The first day of the month of fasting, prayer, and reflection.' },
   { month: 10, day: 1, title: 'Eid al-Fitr', description: 'The celebration marking the end of Ramadan. Check with your masjid for Eid prayer details.' },
   { month: 12, day: 9, title: 'Day of Arafah', description: 'Pilgrims gather at Arafah during Hajj.' },
