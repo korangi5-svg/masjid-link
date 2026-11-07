@@ -1,9 +1,38 @@
 'use client'
 
-import { useEffect, useState, type FormEvent } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { GeometricPattern } from '@/components/home/geometric-pattern'
+import { haversineKm } from '@/lib/geo'
+import { DAILY_PRAYERS, formatCountdown, getNextPrayer } from '@/lib/prayer'
+import type { CommunityEvent, PrayerTimes } from '@/lib/types'
 import { inputClass, secondaryButton } from '@/lib/site'
 
 const DAY = 86400000
+const defaultPlace = { label: 'Toronto, Ontario, Canada', city: 'Toronto', lat: 43.65348, lng: -79.38393, country: 'CA', region: 'CA-ON' }
+type Place = Omit<typeof defaultPlace, 'country' | 'region'> & { country?: string; region?: string }
+type Holiday = { date: string; name: string; scope: string }
+
+const observances = [
+  { month: 1, day: 1, title: 'Islamic New Year', description: 'The first day of Muharram marks the start of a new Hijri year.' },
+  { month: 1, day: 10, title: 'Ashura', description: 'The tenth day of Muharram, observed in different ways across Muslim communities.' },
+  { month: 9, day: 1, title: 'Start of Ramadan', description: 'The first day of the month of fasting, prayer, and reflection.' },
+  { month: 10, day: 1, title: 'Eid al-Fitr', description: 'The celebration marking the end of Ramadan. Check with your masjid for Eid prayer details.' },
+  { month: 12, day: 9, title: 'Day of Arafah', description: 'Pilgrims gather at Arafah during Hajj.' },
+  { month: 12, day: 10, title: 'Eid al-Adha', description: 'The Festival of Sacrifice during the Hajj season. Check with your masjid for Eid prayer details.' },
+]
+
+const hijriNumber = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', { timeZone: 'UTC', month: 'numeric', day: 'numeric' })
+const dateKey = (day: number) => new Date(day).toISOString().slice(0, 10)
+
+function getObservance(day: number, offset: number) {
+  const parts = hijriNumber.formatToParts(day + offset * DAY)
+  const month = Number(parts.find(part => part.type === 'month')?.value)
+  const date = Number(parts.find(part => part.type === 'day')?.value)
+  return observances.find(item => item.month === month && item.day === date)
+}
+
 const hijri = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' })
 const gregorian = new Intl.DateTimeFormat('en-CA', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })
 const gregorianMonth = new Intl.DateTimeFormat('en-CA', { timeZone: 'UTC', month: 'long', year: 'numeric' })
@@ -29,15 +58,19 @@ function monthBounds(anchor: number, isHijri: boolean, offset: number) {
   return { start, end: day30 + (hijriPart(day30, offset, 'day') === '1' ? 0 : DAY) }
 }
 
-export function Calendar() {
+export function Calendar({ events, masjidLocations }: {
+  events: CommunityEvent[]
+  masjidLocations: Record<string, { lat: number; lng: number } | null>
+}) {
   const [now, setNow] = useState<Date | null>(null)
   const [city, setCity] = useState('')
-  const [cityLabel, setCityLabel] = useState('')
-  const [holidays, setHolidays] = useState<{ date: string; name: string }[] | null>(null)
-  const [hasRegion, setHasRegion] = useState(false)
+  const [place, setPlace] = useState<Place | null>(defaultPlace)
+  const [holidayResult, setHolidayResult] = useState<{ key: string; holidays: Holiday[]; incomplete: boolean } | null>(null)
+  const [prayers, setPrayers] = useState<{ key: string; times: PrayerTimes | null } | null>(null)
+  const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [cityError, setCityError] = useState('')
   const [searching, setSearching] = useState(false)
-  const [zone, setZone] = useState('')
+  const [zone, setZone] = useState('America/Toronto')
   const [zones, setZones] = useState<string[]>([])
   const [anchor, setAnchor] = useState<number | null>(null)
   const [isHijri, setIsHijri] = useState(true)
@@ -46,7 +79,7 @@ export function Calendar() {
   useEffect(() => {
     setNow(new Date())
     setZones(typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : ['America/Toronto', 'Europe/London', 'Asia/Riyadh', 'Asia/Karachi', 'Asia/Jakarta', 'UTC'])
-    const timer = window.setInterval(() => setNow(new Date()), 1000)
+    const timer = window.setInterval(() => setNow(new Date()), 15000)
     return () => window.clearInterval(timer)
   }, [])
 
@@ -62,9 +95,8 @@ export function Calendar() {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error)
       setZone(result.zone)
-      setCityLabel(result.label)
-      setHolidays(result.holidays ?? null)
-      setHasRegion(Boolean(result.hasRegion))
+      setPlace(result)
+      setSelectedDay(null)
       setAnchor(null)
     } catch (error) {
       setCityError(error instanceof Error && error.message
@@ -91,76 +123,222 @@ export function Calendar() {
     : gregorianMonth.format(bounds.start)
     : 'Loading calendar…'
 
+  const year = bounds ? new Date(bounds.start).getUTCFullYear() : 0
+  const endYear = bounds ? new Date(bounds.end - DAY).getUTCFullYear() : 0
+  const country = place?.country
+  const region = place?.region
+  const holidayKey = `${country}:${region}:${year}:${endYear}`
+  const lat = place?.lat
+  const lng = place?.lng
+  const prayerKey = `${lat}:${lng}:${today}`
+
+  useEffect(() => {
+    if (!country || !year) return
+    const controller = new AbortController()
+    const years = year === endYear ? [year] : [year, endYear]
+    void Promise.allSettled(years.map(async value => {
+      const params = new URLSearchParams({ country, year: String(value) })
+      if (region) params.set('region', region)
+      const response = await fetch(`/api/calendar/holidays?${params}`, { signal: controller.signal })
+      if (!response.ok) throw new Error('Holiday data unavailable')
+      return (await response.json()).holidays as Holiday[]
+    })).then(results => {
+      if (controller.signal.aborted) return
+      setHolidayResult({
+        key: holidayKey,
+        holidays: results.flatMap(result => result.status === 'fulfilled' ? result.value : []),
+        incomplete: results.some(result => result.status === 'rejected'),
+      })
+    })
+    return () => controller.abort()
+  }, [country, region, year, endYear, holidayKey])
+
+  useEffect(() => {
+    if (lat === undefined || lng === undefined || today === null) return
+    const controller = new AbortController()
+    fetch(`/api/prayer-times?lat=${lat}&lng=${lng}`, { signal: controller.signal })
+      .then(async response => response.ok ? (await response.json()).prayerTimes as PrayerTimes : null)
+      .then(times => {
+        if (!controller.signal.aborted) setPrayers({ key: prayerKey, times })
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setPrayers({ key: prayerKey, times: null })
+      })
+    return () => controller.abort()
+  }, [lat, lng, today, prayerKey])
+
+  const holidayData = holidayResult?.key === holidayKey ? holidayResult : null
+  const monthHolidays = bounds ? (holidayData?.holidays ?? []).filter(holiday =>
+    holiday.date >= dateKey(bounds.start) && holiday.date < dateKey(bounds.end))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name)) : []
+  const times = prayers?.key === prayerKey ? prayers.times : null
+  const nextPrayer = times && now ? getNextPrayer(times, now) : null
+  const upcoming = useMemo(() => {
+    if (today === null) return []
+    const items = []
+    for (let index = 0; index < 370 && items.length < 3; index++) {
+      const day = today + index * DAY
+      const event = getObservance(day, offset)
+      if (event) items.push({ ...event, date: day })
+    }
+    return items
+  }, [today, offset])
+
+  const cityName = place?.city.trim().toLowerCase()
+  const cityEvents = useMemo(() => {
+    if (lat === undefined || lng === undefined) return []
+    return events.filter(event => {
+      const masjid = masjidLocations[event.masjidId]
+      return masjid
+        ? haversineKm(lat, lng, masjid.lat, masjid.lng) <= 25
+        : Boolean(cityName && event.location.toLowerCase().split(',').some(part => part.trim() === cityName))
+    })
+  }, [lat, lng, cityName, events, masjidLocations])
+  const upcomingCommunity = today === null ? [] : cityEvents.filter(event => event.date >= dateKey(today)).slice(0, 6)
+  const activeDay = bounds && selectedDay !== null && selectedDay >= bounds.start && selectedDay < bounds.end
+    ? selectedDay : bounds && today !== null && today >= bounds.start && today < bounds.end ? today : bounds?.start
+  const entries = (day: number) => {
+    const key = dateKey(day)
+    const observance = getObservance(day, offset)
+    return [
+      ...(observance ? [{ name: observance.title, type: 'Islamic observance', detail: observance.description }] : []),
+      ...(holidayData?.holidays ?? []).filter(holiday => holiday.date === key)
+        .map(holiday => ({ name: holiday.name, type: `${holiday.scope} holiday`, detail: '' })),
+      ...cityEvents.filter(event => event.date === key)
+        .map(event => ({ name: event.title, type: 'Masjid event', detail: event.location, href: `/events/${event.id}` })),
+    ]
+  }
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <h1 className="text-4xl font-bold text-navy">Hijri &amp; Gregorian Calendar</h1>
-      <form onSubmit={selectCity} className="mt-6 flex flex-wrap items-end gap-3">
-        <label className="min-w-52 flex-1 font-semibold">City
-          <input className={inputClass} value={city} onChange={event => setCity(event.target.value)}
-            placeholder="Toronto, Canada" required maxLength={120} disabled={searching} />
-        </label>
-        <button className={secondaryButton} type="submit" disabled={searching}>
-          {searching ? 'Finding city…' : 'Set city'}
-        </button>
-      </form>
-      <div aria-live="polite" className="mt-2 text-sm">
-        {cityError && <p>{cityError}</p>}
-        {cityLabel && <p>Calendar location · {cityLabel}</p>}
-      </div>
-      {localTime && <p className="mt-3 text-lg font-semibold text-navy">
-        Local time · <time className="tabular-nums">{localTime}</time>
-      </p>}
-      {today !== null && <p className="mt-3 text-muted-foreground">Today · {hijri.format(today + offset * DAY)} · {gregorian.format(today)}</p>}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <label className="font-semibold">Location time zone
-          <select className={inputClass} value={zone} disabled={searching} onChange={event => { setZone(event.target.value); setCityLabel(''); setCityError(''); setAnchor(null) }}>
-            <option value="">Device time zone{now ? ` (${Intl.DateTimeFormat().resolvedOptions().timeZone})` : ''}</option>
-            {zone && !zones.includes(zone) && <option value={zone}>{zone.replaceAll('_', ' ')}</option>}
-            {zones.map(value => <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}
-          </select>
-        </label>
-        <label className="font-semibold">Hijri date adjustment
-          <select className={inputClass} value={offset} onChange={event => { setOffset(Number(event.target.value)); setAnchor(null) }}>
-            <option value={0}>Umm al-Qura date</option>
-            <option value={-1}>One day earlier</option>
-            <option value={1}>One day later</option>
-          </select>
-        </label>
-      </div>
-      <p className="mt-3 text-sm text-muted-foreground">The calendar uses your location’s civil date and the Umm al-Qura calculation. Adjust the Hijri date to match your local mosque’s moon-sighting announcement.</p>
-      {cityLabel && <section className="mt-6 rounded-xl border border-border bg-surface p-4" aria-live="polite" aria-label="Holiday notice">
-        <h2 className="text-lg font-semibold text-navy">Upcoming public holidays</h2>
-        {holidays?.length ? <>
-          <p className="mt-1 text-sm text-muted-foreground">{hasRegion ? 'National and available regional holidays' : 'National holidays'}</p>
-          <ul className="mt-2 space-y-1">
-            {holidays.map(holiday => <li key={holiday.date + holiday.name}>
-              <time dateTime={holiday.date}>{gregorian.format(new Date(holiday.date))}</time> · {holiday.name}
+    <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden rounded-3xl bg-navy px-5 py-8 text-white sm:p-10">
+        <GeometricPattern className="pointer-events-none absolute -right-10 -top-12 size-80 text-white/10" />
+        <div className="relative">
+          <h1 className="text-sm font-semibold uppercase tracking-widest text-mint">Hijri &amp; Gregorian Calendar</h1>
+          <p className="mt-3 text-3xl font-extrabold sm:text-5xl">{today === null ? 'Loading date…' : hijri.format(today + offset * DAY)}</p>
+          {today !== null && <p className="mt-2 text-white/80">{gregorian.format(today)} · {place?.label ?? 'Selected time zone'}</p>}
+          <dl className="mt-8 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl bg-white/10 p-4"><dt className="text-sm text-mint">Local time</dt><dd className="mt-1 font-semibold tabular-nums">{localTime ?? '—'}</dd></div>
+            <div className="rounded-2xl bg-white/10 p-4"><dt className="text-sm text-mint">Next prayer</dt><dd className="mt-1 font-semibold">{nextPrayer ? `${nextPrayer.label} · ${formatCountdown(nextPrayer.minutesUntil)}` : '—'}</dd></div>
+            <div className="rounded-2xl bg-white/10 p-4"><dt className="text-sm text-mint">Next Islamic observance</dt><dd className="mt-1 font-semibold">{upcoming[0] ? `${upcoming[0].title} · ${gregorian.format(upcoming[0].date)}` : '—'}</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-border bg-white p-4 shadow-sm sm:p-7" aria-labelledby="calendar-month">
+        <form onSubmit={selectCity} className="flex flex-wrap items-end gap-3">
+          <label className="min-w-0 flex-1 basis-48 font-semibold">City
+            <input className={inputClass} value={city} onChange={event => setCity(event.target.value)}
+              placeholder="Toronto, Canada" required maxLength={120} disabled={searching} />
+          </label>
+          <button className={secondaryButton} type="submit" disabled={searching}>{searching ? 'Finding city…' : 'Set city'}</button>
+        </form>
+        {cityError && <p role="alert" className="mt-2 text-sm text-destructive">{cityError}</p>}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label className="font-semibold">Location time zone
+            <select className={inputClass} value={zone} disabled={searching} onChange={event => {
+              setZone(event.target.value); setPlace(null); setCityError(''); setAnchor(null); setSelectedDay(null)
+            }}>
+              <option value="">Device time zone</option>
+              {zone && !zones.includes(zone) && <option value={zone}>{zone.replaceAll('_', ' ')}</option>}
+              {zones.map(value => <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}
+            </select>
+          </label>
+          <label className="font-semibold">Hijri date adjustment
+            <select className={inputClass} value={offset} onChange={event => { setOffset(Number(event.target.value)); setAnchor(null); setSelectedDay(null) }}>
+              <option value={0}>Umm al-Qura date</option><option value={-1}>One day earlier</option><option value={1}>One day later</option>
+            </select>
+          </label>
+        </div>
+        <div className="mt-6 flex flex-wrap gap-2" aria-label="Calendar view">
+          <button type="button" className={secondaryButton} aria-pressed={isHijri} onClick={() => setIsHijri(true)}>Hijri month</button>
+          <button type="button" className={secondaryButton} aria-pressed={!isHijri} onClick={() => setIsHijri(false)}>Gregorian month</button>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 id="calendar-month" className="text-2xl font-bold text-navy" aria-live="polite">{title}</h2>
+          {bounds && <div className="flex flex-wrap gap-2">
+            <button className={secondaryButton} onClick={() => { setAnchor(bounds.start - DAY); setSelectedDay(null) }}>Previous</button>
+            <button className={secondaryButton} onClick={() => { setAnchor(null); setSelectedDay(null) }}>Today</button>
+            <button className={secondaryButton} onClick={() => { setAnchor(bounds.end); setSelectedDay(null) }}>Next</button>
+          </div>}
+        </div>
+        <p className="mt-4 text-xs text-muted-foreground">
+          <span className="font-bold text-teal-dark">● Islamic observance</span>{' · '}
+          <span className="font-bold text-navy">● Public holiday</span>{' · '}
+          <span className="font-bold text-purple">● Masjid event</span>
+        </p>
+        {bounds && <div className="mt-2 grid grid-cols-7 rounded-xl border border-border">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <div key={day} className="bg-surface p-2 text-center text-xs font-semibold">{day}</div>)}
+          {Array.from({ length: new Date(bounds.start).getUTCDay() }, (_, index) => <div key={index} className="border-t border-border" aria-hidden="true" />)}
+          {days.map(day => {
+            const items = entries(day)
+            const types = [...new Set(items.map(item => item.type === 'Islamic observance' ? 'Islamic' : item.type === 'Masjid event' ? 'Masjid' : 'Holiday'))]
+            return <div key={day} className="group relative min-w-0 border-t border-border">
+              <button type="button" aria-current={day === today ? 'date' : undefined} aria-pressed={day === activeDay}
+                aria-label={`${gregorian.format(day)}${items.length ? ': ' + items.map(item => item.name).join(', ') : ''}`}
+                onClick={() => setSelectedDay(day)}
+                className={`h-full min-h-16 w-full px-1 py-2 text-center hover:bg-surface focus-visible:outline focus-visible:outline-teal sm:min-h-20 sm:px-2 ${day === activeDay ? 'bg-accent ring-1 ring-inset ring-teal' : ''}`}>
+                <span className="block font-bold text-navy">{isHijri ? hijriPart(day, offset, 'day') : new Date(day).getUTCDate()}</span>
+                <span className="block truncate text-[10px] text-muted-foreground sm:text-xs">{isHijri ? gregorian.format(day).replace(/,? \d{4}$/, '') : `${hijriPart(day, offset, 'day')} ${hijriPart(day, offset, 'month')}`}</span>
+                {types.map(type => <span key={type} className={`mx-0.5 inline-block rounded-full px-0.5 text-[10px] font-bold sm:px-1 ${type === 'Islamic' ? 'text-teal-dark' : type === 'Masjid' ? 'text-purple' : 'text-navy'}`} aria-hidden="true"><span className="sm:hidden">●</span><span className="hidden sm:inline">{type}</span></span>)}
+              </button>
+              {items.length > 0 && <div aria-hidden="true" className="pointer-events-none absolute bottom-full left-0 z-10 hidden w-36 rounded-lg bg-navy p-2 text-xs text-white shadow-lg group-nth-[7n]:left-auto group-nth-[7n]:right-0 sm:group-hover:block sm:group-focus-within:block">
+                {items.map((item, index) => <p key={index}>{item.name}</p>)}
+              </div>}
+            </div>
+          })}
+        </div>}
+        {activeDay !== undefined && <div className="mt-4 rounded-xl bg-surface p-4" aria-live="polite">
+          <h3 className="font-bold text-navy">{gregorian.format(activeDay)} · {hijri.format(activeDay + offset * DAY)}</h3>
+          {entries(activeDay).length ? <ul className="mt-2 space-y-2 text-sm">{entries(activeDay).map((item, index) => <li key={index}>
+            <span className="font-semibold text-navy">{'href' in item && typeof item.href === 'string' ? <Link href={item.href} className="underline">{item.name}</Link> : item.name}</span>
+            <span className="text-muted-foreground"> · {item.type}{item.detail ? ` · ${item.detail}` : ''}</span>
+          </li>)}</ul> : <p className="mt-1 text-sm text-muted-foreground">No events or holidays listed for this date.</p>}
+        </div>}
+        {monthHolidays.length > 0 && <div className="mt-5">
+          <h3 className="font-bold text-navy">Public holidays this month</h3>
+          <ul className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
+            {monthHolidays.map((holiday, index) => <li key={index} className="rounded-lg bg-surface px-3 py-2">
+              <time dateTime={holiday.date} className="font-semibold text-navy">{gregorian.format(new Date(holiday.date))}</time>
+              {' · '}{holiday.name} <span className="text-muted-foreground">({holiday.scope})</span>
             </li>)}
           </ul>
-        </> : <p className="mt-1 text-sm text-muted-foreground">
-          {holidays ? 'No upcoming holidays were found.' : 'Holiday data is unavailable for this location.'}
-        </p>}
-      </section>}
-      <div className="mt-6 flex flex-wrap gap-2" aria-label="Calendar view">
-        <button type="button" className={secondaryButton} aria-pressed={isHijri} onClick={() => setIsHijri(true)}>Hijri month</button>
-        <button type="button" className={secondaryButton} aria-pressed={!isHijri} onClick={() => setIsHijri(false)}>Gregorian month</button>
-      </div>
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-2xl font-bold text-navy" aria-live="polite">{title}</h2>
-        {bounds && <div className="flex flex-wrap gap-2">
-          <button type="button" className={secondaryButton} onClick={() => setAnchor(bounds.start - DAY)}>Previous</button>
-          <button type="button" className={secondaryButton} onClick={() => setAnchor(null)}>Today</button>
-          <button type="button" className={secondaryButton} onClick={() => setAnchor(bounds.end)}>Next</button>
         </div>}
-      </div>
-      {bounds && <div className="mt-4 grid grid-cols-7 overflow-hidden rounded-xl border border-border">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <div key={day} className="bg-surface p-2 text-center text-xs font-semibold sm:text-sm">{day}</div>)}
-        {Array.from({ length: new Date(bounds.start).getUTCDay() }, (_, index) => <div key={`empty-${index}`} className="border-t border-border" aria-hidden="true" />)}
-        {days.map(day => <div key={day} aria-current={day === today ? 'date' : undefined} className={`min-h-16 border-t border-border p-1.5 sm:p-3 ${day === today ? 'bg-teal/15 ring-1 ring-inset ring-teal' : ''}`}>
-          <span className="block font-semibold text-navy">{isHijri ? hijriPart(day, offset, 'day') : new Date(day).getUTCDate()}</span>
-          <span className="block text-xs text-muted-foreground">{isHijri ? gregorian.format(day).replace(/,? \d{4}$/, '') : `${hijriPart(day, offset, 'day')} ${hijriPart(day, offset, 'month')}`}</span>
-        </div>)}
-      </div>}
+        <p className="mt-4 text-xs text-muted-foreground">Hijri dates use Umm al-Qura and may differ from local moon sightings. Public holidays come from <a className="underline" href="https://nagerholidays.com/">Nager.Date</a> and may omit local or newly gazetted dates.{country && !region ? ' National holidays only for this location.' : ''}</p>
+        <p className="mt-2 text-xs text-muted-foreground" role="status">{!country ? 'Set a city with a supported country to see public holidays.' : !holidayData ? 'Loading public holidays…' : holidayData.incomplete ? 'Some public holiday data is unavailable for this location and month.' : ''}</p>
+      </section>
+
+      <section aria-labelledby="islamic-events">
+        <h2 id="islamic-events" className="text-2xl font-bold text-navy">Upcoming Islamic observances</h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          {upcoming.map(item => <article key={item.date} className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+            <Image src="/images/hero-mosque.png" alt="" width={640} height={240} className="h-28 w-full object-cover" />
+            <div className="p-5">
+              <time dateTime={dateKey(item.date)} className="text-sm font-semibold text-teal-dark">{gregorian.format(item.date)}</time>
+              <h3 className="mt-1 text-lg font-bold text-navy">{item.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
+            </div>
+          </article>)}
+        </div>
+      </section>
+
+      <section aria-labelledby="community-events" className="rounded-2xl border border-border bg-white p-5 sm:p-7">
+        <h2 id="community-events" className="text-2xl font-bold text-navy">Community events{place?.city ? ` near ${place.city}` : ''}</h2>
+        {upcomingCommunity.length ? <ul className="mt-4 grid gap-4 sm:grid-cols-2">{upcomingCommunity.map(event => <li key={event.id} className="rounded-xl bg-surface p-4">
+          <Link href={`/events/${event.id}`} className="font-bold text-navy underline">{event.title}</Link>
+          <p className="mt-1 text-sm text-muted-foreground">{gregorian.format(new Date(event.date))} · {event.startTime} · {event.location}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{event.description}</p>
+        </li>)}</ul> : <p className="mt-2 text-sm text-muted-foreground">{place ? 'No upcoming masjid events are listed near this city.' : 'Set a city to see local masjid events.'}</p>}
+        {place && <Link className="mt-4 inline-block font-semibold text-teal-dark underline" href={`/masjids?lat=${place.lat}&lng=${place.lng}&near=${encodeURIComponent(place.label)}`}>Find nearby masjids</Link>}
+      </section>
+
+      <section aria-labelledby="calendar-prayers" className="rounded-2xl border border-border bg-surface p-5 sm:p-7">
+        <h2 id="calendar-prayers" className="text-2xl font-bold text-navy">Today’s prayer times</h2>
+        {times ? <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">{DAILY_PRAYERS.map(prayer => <div key={prayer.key} className={`rounded-xl p-3 text-center ${nextPrayer?.key === prayer.key ? 'bg-navy text-white' : 'bg-white text-navy'}`}>
+          <dt className="text-sm font-semibold">{prayer.label}</dt><dd className="mt-1 font-bold tabular-nums">{times[prayer.key]}</dd>
+        </div>)}</dl> : <p className="mt-2 text-sm text-muted-foreground">{!place ? 'Set a city to see prayer times.' : prayers?.key === prayerKey ? 'Prayer times are temporarily unavailable.' : 'Loading prayer times…'}</p>}
+        <p className="mt-3 text-xs text-muted-foreground">Calculated for the selected city. Check your masjid for congregation times.</p>
+      </section>
     </div>
   )
 }
