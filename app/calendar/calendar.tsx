@@ -295,14 +295,12 @@ export function Calendar({ events, masjidLocations }: {
               <button type="button" aria-current={day === today ? 'date' : undefined} aria-pressed={day === activeDay}
                 aria-label={`${gregorian.format(day)}${items.length ? ': ' + items.map(item => item.name).join(', ') : ''}`}
                 onClick={() => setSelectedDay(day)}
-                className={`h-full min-h-16 w-full rounded-lg border px-0.5 py-2 text-center transition hover:border-indigo-600 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700 sm:min-h-24 sm:px-2 ${types.length ? tileColors[types[0]].tile : 'border-slate-300 bg-white'} ${day === activeDay ? 'ring-2 ring-inset ring-indigo-700' : ''}`}>
+                className={`h-full min-h-20 w-full rounded-lg border px-0.5 py-2 text-center transition hover:border-indigo-600 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700 sm:min-h-28 sm:px-2 ${types.length ? tileColors[types[0]].tile : 'border-slate-300 bg-white'} ${day === activeDay ? 'ring-2 ring-inset ring-indigo-700' : ''}`}>
                 <span className={`mx-auto grid size-6 place-items-center rounded-full font-bold ${day === today ? 'bg-indigo-800 text-white' : 'text-navy'}`}>{isHijri ? hijriPart(day, offset, 'day') : new Date(day).getUTCDate()}</span>
                 <span className="block truncate text-[10px] text-muted-foreground sm:text-xs">{isHijri ? gregorian.format(day).replace(/,? \d{4}$/, '') : `${hijriPart(day, offset, 'day')} ${hijriPart(day, offset, 'month')}`}</span>
                 {types.map(type => <span key={type} className={`mx-0.5 inline-block rounded-full px-0.5 text-[10px] font-bold sm:px-1 ${tileColors[type].badge}`} aria-hidden="true"><span className="sm:hidden">●</span><span className="hidden sm:inline">{type}</span></span>)}
+                {items.length > 0 && <span aria-hidden="true" className="mt-1 block space-y-0.5 text-[9px] font-semibold leading-tight text-slate-700 sm:text-xs">{items.map((item, index) => <span key={index} className="block break-words">{item.name}</span>)}</span>}
               </button>
-              {items.length > 0 && <div aria-hidden="true" className="pointer-events-none absolute bottom-full left-0 z-10 hidden w-36 rounded-lg bg-navy p-2 text-xs text-white shadow-lg group-nth-[7n]:left-auto group-nth-[7n]:right-0 sm:group-hover:block sm:group-focus-within:block">
-                {items.map((item, index) => <p key={index}>{item.name}</p>)}
-              </div>}
             </div>
           })}
         </div>}
