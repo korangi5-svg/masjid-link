@@ -1,4 +1,5 @@
 import type { AuthError } from '@supabase/supabase-js'
+import { firebaseSignupEnabled, getFirebaseSession, startFirebaseSignup } from '@/lib/services/firebase-auth'
 import { getSupabase, setRememberSession } from '@/lib/supabase'
 import type { ServiceResult } from '@/lib/types'
 import { parseInterests, type Interest } from '@/lib/interests'
@@ -24,7 +25,25 @@ export async function signIn(email: string, password: string, remember: boolean)
   if (!supabase) return { ok: false, error: NOT_CONFIGURED }
   setRememberSession(remember)
   const { error } = await supabase.auth.signInWithPassword({ email, password })
-  return error ? { ok: false, error: toMessage(error) } : { ok: true }
+  if (!error) return { ok: true }
+  if (!firebaseSignupEnabled || error.code !== 'invalid_credentials') {
+    return { ok: false, error: toMessage(error) }
+  }
+
+  try {
+    const firebase = await getFirebaseSession(email, password)
+    if (!firebase) return { ok: false, error: toMessage(error) }
+    if (!firebase.ok) return firebase
+    const { error: sessionError } = await supabase.auth.verifyOtp({
+      type: 'email',
+      token_hash: firebase.tokenHash,
+    })
+    if (sessionError) return { ok: false, error: toMessage(sessionError) }
+    firebase.clearDetails()
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Member sign-in is temporarily unavailable.' }
+  }
 }
 
 export interface SignUpInput {
@@ -44,6 +63,7 @@ function authEmailOrigin() {
 }
 
 export async function signUp({ fullName, email, password, location, interests }: SignUpInput): Promise<ServiceResult<{ needsConfirmation: boolean }>> {
+  if (firebaseSignupEnabled) return startFirebaseSignup({ fullName, email, password, location, interests })
   const supabase = getSupabase()
   if (!supabase) return { ok: false, error: NOT_CONFIGURED }
   const selected = parseInterests(interests)

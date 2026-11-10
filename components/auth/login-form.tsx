@@ -8,6 +8,7 @@ import { FormAlert, TextField } from '@/components/forms/form-field'
 import { PasswordField } from '@/components/auth/password-field'
 import { SignInRecitationContext } from '@/components/auth/auth-provider'
 import { resendSignupConfirmation, signIn } from '@/lib/services/auth'
+import { firebaseSignupEnabled, resendFirebaseConfirmation } from '@/lib/services/firebase-auth'
 import { focusRing, primaryButton } from '@/lib/site'
 import { cn } from '@/lib/utils'
 import { hasErrors, validateEmail, type FieldErrors } from '@/lib/validation'
@@ -35,7 +36,8 @@ export function LoginForm() {
 
     setResending(true)
     try {
-      const result = await resendSignupConfirmation(address)
+      const firebase = firebaseSignupEnabled && password ? await resendFirebaseConfirmation(address, password) : null
+      const result = firebase ?? await resendSignupConfirmation(address)
       if (result.ok) setConfirmationMessage('If this account still needs confirmation, check your inbox for a new link.')
       else setServerError(result.error ?? 'Could not resend the confirmation email.')
     } catch {
