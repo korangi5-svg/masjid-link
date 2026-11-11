@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { digestText, digestWeek, parseFollowPreferences, weeklyDigest } from '@/lib/scholar-follow'
 
+import { loadWeeklyCommunity, weeklyEngagementText } from '@/lib/weekly-engagement'
+
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
@@ -13,6 +15,7 @@ export async function GET(request: Request) {
   const from = process.env.SCHOLAR_FROM_EMAIL
   if (!db || !key || !from) return NextResponse.json({ error: 'Configure Supabase admin access, RESEND_API_KEY, and a verified SCHOLAR_FROM_EMAIL sender.' }, { status: 503 })
   const now = Date.now(), week = digestWeek(now), started = now
+  let community: ReturnType<typeof loadWeeklyCommunity> | undefined
   let sent = 0, skipped = 0, failed = 0
   try {
     for (let page = 1; ; page++) {
@@ -20,19 +23,29 @@ export async function GET(request: Request) {
       if (error) throw new Error('Could not load subscribers')
       for (const candidate of data.users) {
         if (Date.now() - started > 250000) throw new Error('Digest run exceeded its processing window; retry to continue unsent subscribers.')
-        if (!parseFollowPreferences(candidate.user_metadata?.scholar_notifications).weeklyEmail || candidate.app_metadata?.scholar_digest_week === week) { skipped++; continue }
+        const candidatePrefs = parseFollowPreferences(candidate.user_metadata?.scholar_notifications)
+        if ((!candidatePrefs.weeklyEmail && !candidatePrefs.engagementEmail) || candidate.app_metadata?.scholar_digest_week === week) { skipped++; continue }
         // Re-read before sending so an unsubscribe/account change takes effect during long runs.
         const fresh = await db.auth.admin.getUserById(candidate.id)
         if (fresh.error) { failed++; continue }
         const user = fresh.data.user
         const prefs = parseFollowPreferences(user.user_metadata?.scholar_notifications)
-        if (!user.email || !user.email_confirmed_at || !prefs.weeklyEmail || !prefs.emailSince || user.app_metadata?.scholar_digest_week === week) { skipped++; continue }
-        const items = weeklyDigest(user.user_metadata?.recommendation_activity, prefs, now)
-        if (!items.length) { skipped++; continue }
+        if (!user.email || !user.email_confirmed_at || (!prefs.engagementEmail && (!prefs.weeklyEmail || !prefs.emailSince)) || user.app_metadata?.scholar_digest_week === week) { skipped++; continue }
+        const items = prefs.weeklyEmail && prefs.emailSince
+          ? weeklyDigest(user.user_metadata?.recommendation_activity, prefs, now)
+          : []
         try {
+          const engagement = prefs.engagementEmail
+            ? weeklyEngagementText(user.user_metadata, await (community ??= loadWeeklyCommunity(db, now)), now)
+            : ''
+          if (!items.length && !engagement) { skipped++; continue }
+          const text = [
+            items.length ? digestText(items) : '',
+            engagement ? engagement + '\n\nManage weekly email preferences: https://masjid-link.vercel.app/notifications' : '',
+          ].filter(Boolean).join('\n\n')
           const response = await fetch('https://api.resend.com/emails', {
             method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'Idempotency-Key': `scholar-digest/${user.id}/${week}` },
-            body: JSON.stringify({ from, to: [user.email], subject: 'Your weekly scholar digest · Masjid Link', text: digestText(items) }), signal: AbortSignal.timeout(10000),
+            body: JSON.stringify({ from, to: [user.email], subject: engagement ? 'This week on Connect to Masjid' : 'Your weekly scholar digest · Masjid Link', text }), signal: AbortSignal.timeout(10000),
           })
           const body = await response.json()
           if (!response.ok || !body.id) { failed++; continue }

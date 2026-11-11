@@ -5,6 +5,7 @@ import type { Interest } from './interests'
 export interface FollowPreferences {
   inApp: boolean
   weeklyEmail: boolean
+  engagementEmail: boolean
   emailSince: number
   read: string[]
   since: Record<string, number>
@@ -16,13 +17,14 @@ export function parseFollowPreferences(value: unknown, now = Date.now()): Follow
   const raw = object(value)
   const validTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0 && v <= now
   const since = Object.fromEntries(scholars.flatMap(s => validTime(object(raw.since)[s.id]) ? [[s.id, object(raw.since)[s.id] as number]] : []))
-  return { inApp: raw.inApp !== false, weeklyEmail: raw.weeklyEmail === true, emailSince: validTime(raw.emailSince) ? raw.emailSince : 0, since, read: Array.isArray(raw.read) ? [...new Set(raw.read.filter((id): id is string => typeof id === 'string' && id.length <= 100))].slice(-128) : [] }
+  return { inApp: raw.inApp !== false, weeklyEmail: raw.weeklyEmail === true, engagementEmail: raw.engagementEmail === true, emailSince: validTime(raw.emailSince) ? raw.emailSince : 0, since, read: Array.isArray(raw.read) ? [...new Set(raw.read.filter((id): id is string => typeof id === 'string' && id.length <= 100))].slice(-128) : [] }
 }
 
-export type FollowAction = { type: 'notifications'; inApp: boolean; weeklyEmail: boolean } | { type: 'read-notifications'; ids: string[] }
+export type FollowAction = { type: 'notifications'; inApp: boolean; weeklyEmail: boolean } | { type: 'engagement-email'; enabled: boolean } | { type: 'read-notifications'; ids: string[] }
 export function updateFollowPreferences(value: unknown, action: FollowAction, now = Date.now()): FollowPreferences {
   const prefs = parseFollowPreferences(value, now)
   if (action.type === 'notifications') return { ...prefs, inApp: action.inApp, weeklyEmail: action.weeklyEmail, emailSince: action.weeklyEmail && !prefs.weeklyEmail ? now : prefs.emailSince }
+  if (action.type === 'engagement-email') return { ...prefs, engagementEmail: action.enabled }
   return parseFollowPreferences({ ...prefs, read: [...prefs.read, ...action.ids] }, now)
 }
 
