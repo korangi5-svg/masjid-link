@@ -4,7 +4,13 @@ export function learningDate(now = Date.now()) {
 }
 export function dailyPreferences(value: unknown) {
   const raw = value && typeof value === 'object' ? value as Record<string, unknown> : {}
-  return { email: raw.email === true, inApp: raw.inApp !== false, readDate: typeof raw.readDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.readDate) ? raw.readDate : '' }
+  const isDate = (date: unknown): date is string => typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+    && Number.isFinite(Date.parse(date)) && new Date(date).toISOString().slice(0, 10) === date
+  const dates = (items: unknown[]) => [...new Set(items.filter(isDate))].sort().slice(-366)
+  return {
+    completedDates: dates([...(Array.isArray(raw.completedDates) ? raw.completedDates : []), raw.readDate]),
+    reflectionDates: dates(Array.isArray(raw.reflectionDates) ? raw.reflectionDates : []),
+    email: raw.email === true, inApp: raw.inApp !== false, readDate: typeof raw.readDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.readDate) ? raw.readDate : '' }
 }
 const verses = [
   { arabic: 'فَإِنَّ مَعَ الْعُسْرِ يُسْرًا', meaning: 'So, surely with hardship comes ease.', reference: 'Ash-Sharh 94:5', href: 'https://quran.com/94/5', context: 'This reassurance appears in a surah addressing the Prophet ﷺ. Read verses 1–8 for the surrounding message.' },

@@ -11,6 +11,7 @@ import { ActivityControls } from '@/components/learning/activity-controls'
 import { ContentCard, formatLabels } from '@/components/learning/content-card'
 import { primaryButton, secondaryButton } from '@/lib/site'
 import { cn } from '@/lib/utils'
+import { LearningHabits } from './learning-habits'
 import { DailyLearningReminder } from '@/components/learning/daily-learning'
 import { LearningPathLink } from '@/components/learning/learning-path'
 import { QuestionsLink } from '@/components/learning/questions'
@@ -36,6 +37,7 @@ export function PersonalizedDashboard() {
         <div className="mt-6 flex flex-wrap gap-2" aria-label="Your interests">{selected.map((id) => <span key={id} className="rounded-full bg-white/15 px-3 py-1.5 text-sm">{interestLabel(id)}</span>)}</div>
       </section>
       <DailyLearningReminder />
+      <LearningHabits metadata={{ ...user.user_metadata, recommendation_activity: activity }} />
       <LearningPathLink />
       <QuestionsLink />
       <ActivityControls state={state} />
