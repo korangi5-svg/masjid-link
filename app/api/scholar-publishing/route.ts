@@ -1,7 +1,9 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
-export const maxDuration = 30
+import { translateArticle } from '@/lib/scholar-translation'
+
+export const maxDuration = 150
 const fields = ['summary', 'tags', 'categories', 'seo_title', 'seo_description', 'facebook', 'instagram', 'x'] as const
 const reply = (data: unknown, status = 200) => NextResponse.json(data, { status, headers: { 'Cache-Control': 'private, no-store' } })
 
@@ -25,10 +27,16 @@ export async function POST(request: Request) {
     return reply({ error: 'Enter a title and an article between 100 and 20,000 characters.' }, 400)
   }
 
-  const existing = await db.from('scholar_articles').select('id,title,body,social_drafts').eq('id', id).eq('author_id', user.id).maybeSingle()
+  const existing = await db.from('scholar_articles').select('id,title,body,summary,social_drafts').eq('id', id).eq('author_id', user.id).maybeSingle()
   if (existing.error) return reply({ error: 'Could not check publication status. Try again.' }, 503)
   if (existing.data) {
     if (existing.data.title !== title || existing.data.body !== body) return reply({ error: 'This submission was already published. Reload before submitting a different article.' }, 409)
+    if (key) {
+      const source = { title, body, summary: existing.data.summary }
+      after(() => translateArticle(db, key, id, source).catch(() => {
+        console.warn('Could not load article translations', { id })
+      }))
+    }
     return reply({ id, drafts: existing.data.social_drafts })
   }
   if (!key) return reply({ error: 'AI generation is unavailable. Your article has not been published.' }, 503)
@@ -75,9 +83,13 @@ export async function POST(request: Request) {
       seo_description: generated.seo_description.slice(0, 155), social_drafts: drafts,
     }, { onConflict: 'id', ignoreDuplicates: true })
     if (saved.error) throw saved.error
-    const published = await db.from('scholar_articles').select('title,body,social_drafts').eq('id', id).eq('author_id', user.id).single()
+    const published = await db.from('scholar_articles').select('title,body,summary,social_drafts').eq('id', id).eq('author_id', user.id).single()
     if (published.error) throw published.error
     if (published.data.title !== title || published.data.body !== body) return reply({ error: 'This submission ID is already in use.' }, 409)
+    const source = { title, body, summary: published.data.summary }
+    after(() => translateArticle(db, key, id, source).catch(() => {
+      console.warn('Could not load article translations', { id })
+    }))
     return reply({ id, drafts: published.data.social_drafts })
   } catch {
     return reply({ error: 'Could not complete publishing. Your text is still in the form. Retry to check or finish this submission.' }, 503)
