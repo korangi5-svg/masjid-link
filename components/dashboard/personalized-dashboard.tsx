@@ -11,6 +11,7 @@ import { ActivityControls } from '@/components/learning/activity-controls'
 import { ContentCard, formatLabels } from '@/components/learning/content-card'
 import { primaryButton, secondaryButton } from '@/lib/site'
 import { cn } from '@/lib/utils'
+import { CommunityGrowth } from './community-growth'
 import { LearningHabits } from './learning-habits'
 import { DailyLearningReminder } from '@/components/learning/daily-learning'
 import { LearningPathLink } from '@/components/learning/learning-path'
@@ -38,6 +39,7 @@ export function PersonalizedDashboard() {
       </section>
       <DailyLearningReminder />
       <LearningHabits metadata={{ ...user.user_metadata, recommendation_activity: activity }} />
+      <CommunityGrowth key={user.id} user={user} personalizationEnabled={activity.enabled} />
       <LearningPathLink />
       <QuestionsLink />
       <ActivityControls state={state} />
