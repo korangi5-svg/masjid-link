@@ -1,3 +1,4 @@
+import { relatedLearning } from './learning-graph'
 import { interestLabel, parseInterests, type Interest } from './interests'
 import { contentCatalog, scholars, type CatalogResource } from './recommendations'
 
@@ -95,10 +96,15 @@ export function rankRecommendations(selected: unknown, value: unknown, now = Dat
   const weights = new Map<Interest, number>(chosen.map((id) => [id, 4]))
   const history = new Map<Interest, number>()
   const searched = new Set<Interest>()
+  const related = new Map<string, { score: number; source: string }>()
   const decay = (at: number) => Math.pow(0.5, Math.max(0, now - at) / (30 * DAY))
   if (activity.enabled) {
     for (const entry of activity.completed) {
       const item = contentCatalog.find((item) => item.id === entry.contentId)!
+      for (const resource of relatedLearning(item.id).resources) {
+        const score = 8 * decay(entry.at)
+        if (score > (related.get(resource.id)?.score ?? 0)) related.set(resource.id, { score, source: item.title })
+      }
       for (const topic of item.interests) history.set(topic, (history.get(topic) ?? 0) + 3 * decay(entry.at))
     }
     for (const [topic, weight] of history) weights.set(topic, (weights.get(topic) ?? 0) + Math.min(8, weight))
@@ -115,8 +121,9 @@ export function rankRecommendations(selected: unknown, value: unknown, now = Dat
     const recentTopic = item.interests.find((topic) => history.has(topic))
     const searchTopic = item.interests.find((topic) => searched.has(topic))
     const selectedTopic = item.interests.find((topic) => chosen.includes(topic))
-    const reason = followed ? `Because you follow ${followed.name}` : recentTopic ? `Inspired by your learning about ${interestLabel(recentTopic)}` : searchTopic ? `Because you searched for ${interestLabel(searchTopic)}` : selectedTopic ? `Because you chose ${interestLabel(selectedTopic)}` : 'Discover a different topic'
-    return { ...item, score: topicScore + (followed ? 7 : 0), reason }
+    const connection = related.get(item.id)
+    const reason = connection ? 'Related to ' + connection.source : followed ? `Because you follow ${followed.name}` : recentTopic ? `Inspired by your learning about ${interestLabel(recentTopic)}` : searchTopic ? `Because you searched for ${interestLabel(searchTopic)}` : selectedTopic ? `Because you chose ${interestLabel(selectedTopic)}` : 'Discover a different topic'
+    return { ...item, score: topicScore + (followed ? 7 : 0) + (connection?.score ?? 0), reason }
   }).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)).filter((item) => {
     if (urls.has(item.href)) return false
     urls.add(item.href)
