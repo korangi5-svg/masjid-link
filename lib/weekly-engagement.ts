@@ -45,7 +45,7 @@ export async function loadWeeklyCommunity(db: SupabaseClient, now: number) {
   }
 }
 
-export function weeklyEngagementText(
+export function weeklyEngagementSections(
   metadata: Record<string, unknown>,
   community: Awaited<ReturnType<typeof loadWeeklyCommunity>>,
   now: number,
@@ -60,16 +60,21 @@ export function weeklyEngagementText(
   const recommended = rankRecommendations(metadata.interests, activity, now)
     .filter(item => !featured.has(item.id))
     .slice(0, 3)
-  const resourceLine = (item: { title: string; href: string }) => `${item.title}\n${item.href}`
+  return [
+    { title: 'Content you may have missed', items: missed },
+    { title: 'New discussions', items: community.discussions.map(title => ({ title, href: `${site}/discussions` })) },
+    { title: 'Popular articles', items: community.articles },
+    { title: 'Recommended learning', items: recommended },
+  ]
+}
 
-  const sections = [
-    ['Content you may have missed', missed.map(resourceLine)],
-    ['New discussions', community.discussions.length ? [...community.discussions, `${site}/discussions`] : []],
-    ['Popular articles', community.articles.map(resourceLine)],
-    ['Recommended learning', recommended.map(resourceLine)],
-  ] as const
-
-  return sections.filter(([, items]) => items.length)
-    .map(([title, items]) => `${title}\n${items.join('\n\n')}`)
+export function weeklyEngagementText(
+  metadata: Record<string, unknown>,
+  community: Awaited<ReturnType<typeof loadWeeklyCommunity>>,
+  now: number,
+) {
+  return weeklyEngagementSections(metadata, community, now)
+    .filter(({ items }) => items.length)
+    .map(({ title, items }) => `${title}\n${items.map(item => `${item.title}\n${item.href}`).join('\n\n')}`)
     .join('\n\n')
 }
