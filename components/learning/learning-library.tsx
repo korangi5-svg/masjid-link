@@ -16,17 +16,18 @@ export function LearningLibrary() {
   const [search, setSearch] = useState('')
   const [kind, setKind] = useState<ContentKind | 'all'>('all')
   const [searchStatus, setSearchStatus] = useState('')
-  const results = contentCatalog.filter((item) => {
+  const matchingResources = (value: string) => contentCatalog.filter((item) => {
     const text = [item.title, item.description, item.publisher, ...item.interests.map(interestLabel), ...scholars.filter((scholar) => item.scholarIds.includes(scholar.id)).map((scholar) => scholar.name)].join(' ').toLowerCase()
-    return (kind === 'all' || item.kind === kind) && search.toLowerCase().split(/\s+/).filter(Boolean).every((word) => text.includes(word))
+    return (kind === 'all' || item.kind === kind) && value.toLowerCase().split(/\s+/).filter(Boolean).every((word) => text.includes(word))
   })
+  const results = matchingResources(search)
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const value = query.trim().slice(0, 100)
     setSearch(value)
     setSearchStatus('')
     if (value && searchTopics(value).length && state.user && state.activity.enabled) {
-      if (await state.save({ type: 'search', query: value })) setSearchStatus('Matching topic preferences updated. Your search text was not saved.')
+      if (await state.save({ type: 'search', query: value, unanswered: !matchingResources(value).length })) setSearchStatus('Matching topic preferences updated. Your search text was not saved.')
     }
   }
   return (

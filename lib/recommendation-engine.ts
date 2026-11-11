@@ -3,7 +3,7 @@ import { contentCatalog, scholars, type CatalogResource } from './recommendation
 
 export type CompletionKind = 'read' | 'watched' | 'completed' | 'listened'
 export interface ActivityEntry { contentId: string; action: CompletionKind; at: number }
-export interface SearchEntry { topics: Interest[]; at: number }
+export interface SearchEntry { topics: Interest[]; at: number; unanswered?: boolean }
 export interface RecommendationActivity {
   version: 1
   enabled: boolean
@@ -17,7 +17,7 @@ export type ActivityAction =
   | { type: 'follow'; scholarId: string; following: boolean }
   | { type: 'complete'; contentId: string }
   | { type: 'undo'; contentId: string }
-  | { type: 'search'; query: string }
+  | { type: 'search'; query: string; unanswered?: boolean }
 
 const DAY = 86400000
 const MAX_AGE = 180 * DAY
@@ -40,7 +40,7 @@ export function parseActivity(value: unknown, now = Date.now()): RecommendationA
     }).slice(0, 32)
   const searches: SearchEntry[] = (Array.isArray(raw.searches) ? raw.searches : [])
     .map(record).filter((entry) => validTime(entry.at))
-    .map((entry) => ({ topics: parseInterests(entry.topics), at: Number(entry.at) }))
+    .map((entry) => ({ topics: parseInterests(entry.topics), at: Number(entry.at), unanswered: entry.unanswered === true }))
     .filter((entry) => entry.topics.length > 0)
     .sort((a, b) => b.at - a.at).slice(0, 12)
   const followedScholars = scholars.filter((scholar) => Array.isArray(raw.followedScholars) && raw.followedScholars.includes(scholar.id)).map((scholar) => scholar.id)
@@ -79,7 +79,7 @@ export function applyActivityAction(value: unknown, action: ActivityAction, now 
     const topics = searchTopics(action.query)
     if (!topics.length) return activity
     // Repeating the same search cannot amplify its weight.
-    return { ...activity, searches: [{ topics, at: now }, ...activity.searches.filter((entry) => entry.topics.join() !== topics.join())].slice(0, 12) }
+    return { ...activity, searches: [{ topics, at: now, unanswered: action.unanswered === true }, ...activity.searches.filter((entry) => entry.topics.join() !== topics.join())].slice(0, 12) }
   }
   return activity
 }
