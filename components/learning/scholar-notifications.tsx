@@ -16,7 +16,7 @@ export function ScholarNotifications({ emailReady }: { emailReady: boolean }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-  const prefs = saved?.userId === state.user?.id ? saved!.prefs : parseFollowPreferences(state.user?.user_metadata?.scholar_notifications)
+  const prefs = saved && saved.userId === state.user?.id ? saved.prefs : parseFollowPreferences(state.user?.user_metadata?.scholar_notifications)
   const updates = scholarUpdates(state.activity, prefs)
   const unread = updates.filter(item => !prefs.read.includes(item.id))
   const digest = weeklyDigest(state.activity, prefs)
