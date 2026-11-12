@@ -24,6 +24,8 @@ const navButtonColors: Record<string, string> = {
   '/calendar': 'bg-[#E5ECFF] text-[#314B93] border-[#C6D3F8]',
   '/about': 'bg-[#E8F3D9] text-[#416022] border-[#CBDFB0]',
   '/contact': 'bg-[#DFF4F8] text-[#17586B] border-[#B5E1EA]',
+  '/search': 'bg-[#E1F1FF] text-[#174B78] border-[#B9DAF5]',
+  '/notifications': 'bg-[#EFE7FF] text-[#563592] border-[#D9C8FA]',
 }
 
 export function navButtonColor(href: string, active: boolean) {
