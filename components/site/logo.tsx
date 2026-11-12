@@ -30,12 +30,12 @@ export function Logo({ variant = 'dark', className }: { variant?: 'dark' | 'ligh
           <span className={light ? 'text-white' : 'text-navy'}>Connect to </span>
           <span className={light ? 'text-mint' : 'text-teal'}>Masjid</span>
         </span>
-        <span className="mt-1.5 text-[0.55rem] font-bold tracking-[0.28em] md:text-[0.62rem]">
+        <span className="mt-1.5 text-[0.6875rem] font-extrabold tracking-[0.14em] md:text-xs">
           <span className={light ? 'text-[#8DE5C5]' : 'text-[#087354]'}>PRAY</span>{' '}
           <span className={light ? 'text-white/70' : 'text-navy/60'}>•</span>{' '}
-          <span className={light ? 'text-[#FFD77C]' : 'text-[#805300]'}>LEARN</span>{' '}
+          <span className={light ? 'text-[#FFD77C]' : 'text-[#A14D00]'}>LEARN</span>{' '}
           <span className={light ? 'text-white/70' : 'text-navy/60'}>•</span>{' '}
-          <span className={light ? 'text-[#A9D6FF]' : 'text-[#174B78]'}>CONNECT</span>
+          <span className={light ? 'text-[#A9D6FF]' : 'text-[#174EA6]'}>CONNECT</span>
         </span>
       </span>
       <span className="sr-only">Connect to Masjid home</span>
