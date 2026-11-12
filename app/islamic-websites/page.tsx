@@ -13,6 +13,7 @@ const websites = [
   { name: 'Quran.com', href: 'https://quran.com/', description: 'Read the Quran with translations, tafsir, and audio recitations.' },
   { name: 'Sunnah.com', href: 'https://sunnah.com/', description: 'Search hadith collections and find daily duas.' },
   { name: 'Yaqeen Institute', href: 'https://yaqeeninstitute.org/', description: 'Browse articles, lectures, and research on Islam.' },
+  { name: 'Dr. Israr Ahmad', href: 'https://www.drisrar.com/', description: 'Explore Quran tafsir, hadith lessons, and lectures in Urdu and English.' },
   { name: 'MuslimMatters', href: 'https://muslimmatters.org/', description: 'Read articles on faith, family, and community life.' },
   { name: 'Madinah Arabic', href: 'https://www.madinaharabic.com/', description: 'Explore Arabic reading and language lessons for beginners.' },
   { name: 'New Muslim Academy', href: 'https://www.newmuslimacademy.org/our-courses/', description: 'Find introductory courses on faith, worship, and daily life.' },
