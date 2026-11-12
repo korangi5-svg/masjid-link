@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Mic, Square } from 'lucide-react'
+import { Mic, Square, Volume2 } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { inputClass, primaryButton, secondaryButton } from '@/lib/site'
 
@@ -29,6 +29,10 @@ export function Assistant() {
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<Result | null>(null)
 
+  const playback = useRef<SpeechSynthesisUtterance | null>(null)
+  const [reading, setReading] = useState(false)
+  const [audioStatus, setAudioStatus] = useState('')
+
   const recognitionRef = useRef<Recognition | null>(null)
   const voiceRequest = useRef(0)
   const [listening, setListening] = useState(false)
@@ -39,7 +43,53 @@ export function Assistant() {
     const recognition = recognitionRef.current
     recognitionRef.current = null
     recognition?.abort()
+    if (playback.current) {
+      playback.current = null
+      window.speechSynthesis.cancel()
+    }
   }, [])
+
+  function stopReading() {
+    if (playback.current) {
+      playback.current = null
+      window.speechSynthesis.cancel()
+    }
+    setReading(false)
+    setAudioStatus('')
+  }
+
+  function toggleReading(answer: Result) {
+    if (playback.current) {
+      stopReading()
+      return
+    }
+
+    if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== 'function') {
+      setAudioStatus('Read aloud is unavailable in this browser.')
+      return
+    }
+
+    const speech = new SpeechSynthesisUtterance([answer.message, ...(answer.details ?? [])].join(' '))
+    speech.lang = 'en-CA'
+    speech.onend = () => {
+      if (playback.current === speech) stopReading()
+    }
+    speech.onerror = () => {
+      if (playback.current !== speech) return
+      stopReading()
+      setAudioStatus('Audio playback couldn’t start. Try Read aloud again.')
+    }
+
+    playback.current = speech
+    setAudioStatus('')
+    setReading(true)
+    try {
+      window.speechSynthesis.speak(speech)
+    } catch {
+      stopReading()
+      setAudioStatus('Audio playback couldn’t start. Try Read aloud again.')
+    }
+  }
 
   async function toggleVoice() {
     if (recognitionRef.current) {
@@ -55,6 +105,7 @@ export function Assistant() {
     }
 
     if (listening) return
+    stopReading()
     const request = ++voiceRequest.current
     setListening(true)
     setVoiceStatus('Checking microphone access…')
@@ -109,6 +160,7 @@ export function Assistant() {
 
   function switchMode(next: Mode) {
     if (mode === next) return
+    stopReading()
     const recognition = recognitionRef.current
     recognitionRef.current = null
     recognition?.abort()
@@ -122,6 +174,7 @@ export function Assistant() {
   async function ask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!text.trim() || busy || listening) return
+    stopReading()
     setBusy(true)
     setResult(null)
     try {
@@ -171,6 +224,12 @@ export function Assistant() {
         {result && (
           <section aria-label="Assistant result" className="mt-5 rounded-2xl bg-surface p-5 sm:p-6">
             <p className="leading-relaxed text-navy">{result.message}</p>
+            <button type="button" className={`${secondaryButton} mt-3 px-3 py-2`}
+              onClick={() => toggleReading(result)} disabled={listening}>
+              {reading ? <Square className="size-4" aria-hidden="true" /> : <Volume2 className="size-4" aria-hidden="true" />}
+              {reading ? 'Stop reading' : 'Read aloud'}
+            </button>
+            {audioStatus && <p role="status" className="mt-2 text-sm text-muted-foreground">{audioStatus}</p>}
             {Boolean(result.details?.length) && (
               <ul className="mt-4 flex flex-wrap gap-2">
                 {result.details?.map(item => <li key={item} className="rounded-full bg-white px-3 py-1 text-sm text-navy">{item}</li>)}
