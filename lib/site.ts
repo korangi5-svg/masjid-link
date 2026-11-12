@@ -6,6 +6,7 @@ export const navLinks = [
   { href: '/local-services', label: 'Local Services' },
   { href: '/events', label: 'Events' },
   { href: '/resources', label: 'Resources' },
+  { href: '/islamic-websites', label: 'Islamic Websites' },
   { href: '/daily-learning', label: 'Daily Learning' },
   { href: '/calendar', label: 'Calendar' },
   { href: '/about', label: 'About' },

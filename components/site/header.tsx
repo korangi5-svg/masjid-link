@@ -19,8 +19,8 @@ export function Header() {
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:h-[105px] lg:px-8">
         <Logo />
 
-        <nav aria-label="Main" className="hidden lg:block">
-          <ul className="flex items-center gap-1 xl:gap-3">
+        <nav aria-label="Main" className="hidden xl:block">
+          <ul className="flex items-center gap-1 2xl:gap-2">
             {navLinks.map((link) => {
               const active = isActivePath(pathname, link.href)
               return (
@@ -29,8 +29,8 @@ export function Header() {
                     href={link.href}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      'relative flex h-[105px] items-center px-3 text-[0.95rem] font-medium transition-colors',
-                      'after:absolute after:inset-x-3 after:bottom-7 after:h-[3px] after:rounded-full after:transition-colors',
+                      'relative flex h-[105px] items-center px-2 text-sm font-medium transition-colors',
+                      'after:absolute after:inset-x-2 after:bottom-7 after:h-[3px] after:rounded-full after:transition-colors',
                       active ? 'text-teal-dark after:bg-teal' : 'text-navy hover:text-teal after:bg-transparent',
                       focusRing,
                     )}

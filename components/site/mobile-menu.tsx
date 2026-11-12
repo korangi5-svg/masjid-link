@@ -24,7 +24,7 @@ export function MobileMenu({ pathname }: { pathname: string }) {
   }, [open])
 
   return (
-    <div className="lg:hidden">
+    <div className="xl:hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
