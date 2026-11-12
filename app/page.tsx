@@ -15,7 +15,8 @@ export default function HomePage() {
           <h2 className="text-2xl font-bold text-navy">Connect to Masjid Assistant</h2>
           <p className="mt-1 text-muted-foreground">Find prayer times, get around the site, or look up an Islamic question.</p>
         </div>
-        <Link href="/assistant" className={primaryButton}>Open AI Assistant</Link>
+        {/* Load a new document so the assistant’s microphone policy takes effect. */}
+        <a href="/assistant" className={primaryButton}>Open AI Assistant</a>
       </section>
       <FeatureGrid />
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"><div className="rounded-3xl bg-surface p-8 sm:flex sm:items-center sm:justify-between sm:gap-6"><div><p className="text-sm font-semibold uppercase tracking-wider text-teal-dark">Five minutes for your faith</p><h2 className="mt-3 text-3xl font-bold text-navy">Your daily moment of learning</h2><p className="my-4 max-w-xl text-muted-foreground">A Quran verse, authentic hadith, dua, reflection, and one small action. A fresh practice each day.</p></div><Link href="/daily-learning" className={primaryButton}>Read today’s lesson</Link></div></section>
