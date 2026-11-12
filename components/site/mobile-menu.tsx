@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useId, useState } from 'react'
 import { Menu, X } from 'lucide-react'
-import { focusRing, isActivePath as isActive, navLinks } from '@/lib/site'
+import { focusRing, isActivePath as isActive, navButton, navButtonColor, navLinks } from '@/lib/site'
 import { cn } from '@/lib/utils'
 
 export function MobileMenu({ pathname }: { pathname: string }) {
@@ -40,9 +40,9 @@ export function MobileMenu({ pathname }: { pathname: string }) {
         id={menuId}
         aria-label="Mobile"
         hidden={!open}
-        className="absolute inset-x-0 top-full border-b border-border bg-white shadow-lg"
+        className="absolute inset-x-0 top-full max-h-[calc(100dvh-5rem)] overflow-y-auto border-b border-border bg-white shadow-lg"
       >
-        <ul className="mx-auto flex max-w-7xl flex-col px-4 py-2 sm:px-6">
+        <ul className="mx-auto grid max-w-7xl grid-cols-2 gap-2 px-4 py-3 sm:grid-cols-3 sm:px-6">
           {navLinks.map((link) => {
             const active = isActive(pathname, link.href)
             return (
@@ -51,8 +51,9 @@ export function MobileMenu({ pathname }: { pathname: string }) {
                   href={link.href}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'flex items-center border-l-4 px-4 py-3.5 text-base font-medium transition-colors',
-                    active ? 'border-teal bg-surface text-teal-dark' : 'border-transparent text-navy hover:bg-surface',
+                    navButton,
+                    'h-full',
+                    navButtonColor(link.href, active),
                     focusRing,
                   )}
                 >
