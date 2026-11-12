@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { getQuestionCatalog } from '@/lib/services/question-catalog'
 import { contactInfo } from '@/lib/site'
-import { knowledgeBase, routeQuestion, normalizeQuestion, parseTicket, publicAnswer, isQuestionReviewer, questionCategories, type KnowledgeAnswer, type QuestionTicket } from '@/lib/questions'
+import { routeQuestion, normalizeQuestion, parseTicket, isQuestionReviewer, questionCategories, type QuestionTicket } from '@/lib/questions'
 
 export const dynamic='force-dynamic'
 const fail=(error:string,status:number)=>NextResponse.json({error},{status})
@@ -14,13 +15,6 @@ async function identify(request:Request,db:NonNullable<ReturnType<typeof getSupa
   return result.error ? null : result.data.user
 }
 const reviewer=(user:Parameters<typeof isQuestionReviewer>[0])=>isQuestionReviewer(user,process.env.QA_REVIEWER_EMAILS||contactInfo.email)
-async function catalog(db:ReturnType<typeof getSupabaseAdmin>) {
-  if(!db)return {items:knowledgeBase,available:false}
-  const result=await db.from('contact_messages').select('id,message').eq('subject','QA:published').order('created_at',{ascending:false}).limit(200)
-  const extra:KnowledgeAnswer[]=[]
-  for(const row of result.data||[]) {const ticket=parseTicket(row.message);const answer=ticket&&publicAnswer(row.id,ticket);if(answer)extra.push(answer)}
-  return {items:[...knowledgeBase,...extra],available:!result.error}
-}
 export async function GET(request:Request) {
   try {
     const db=getSupabaseAdmin(), user=db?await identify(request,db):null
@@ -30,7 +24,7 @@ export async function GET(request:Request) {
       if(result.error)return fail('The review queue is unavailable. Please try again.',503)
       return NextResponse.json({tickets:(result.data||[]).flatMap(row=>{const ticket=parseTicket(row.message);return ticket?[{id:row.id,createdAt:row.created_at,...ticket}]:[]})},{headers:{'Cache-Control':'private, no-store'}})
     }
-    const kb=await catalog(db)
+    const kb=await getQuestionCatalog(db)
     let tickets:unknown[]=[]
     if(user&&db) {
       const result=await db.from('contact_messages').select('id,message,created_at').eq('email',user.email!).like('subject','QA:%').order('created_at',{ascending:false}).limit(50)
@@ -73,7 +67,7 @@ export async function POST(request:Request) {
     const prior=attempts.get(ip)
     if((prior?.count||0)>=30||attempts.size>=10000)return fail('Please wait a few minutes before asking more questions.',429)
     attempts.set(ip,{count:(prior?.count||0)+1,until:prior?.until||now+600000})
-    const kb=await catalog(db),route=routeQuestion(question,kb.items)
+    const kb=await getQuestionCatalog(db),route=routeQuestion(question,kb.items)
     if(!route.needsReview&&input.action!=='escalate')return NextResponse.json({...route,queued:false})
     if(!user||!user.email_confirmed_at||!user.email)return NextResponse.json({...route,queued:false,signInRequired:true})
     if(!db||!kb.available)return fail('The review queue is unavailable. Your question has not been submitted. Please try again later.',503)
