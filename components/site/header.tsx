@@ -16,15 +16,15 @@ export function Header() {
   const searchActive = pathname === '/search'
   const searchAndNotifications = (
     <>
-    <Link
-      href="/search"
-      aria-label="Search Masjid Link"
-      aria-current={searchActive ? 'page' : undefined}
-      className={cn(navButton, 'size-11 p-0', navButtonColor('/search', searchActive), focusRing)}
-    >
-      <Search className="size-5" aria-hidden="true" />
-    </Link>
-    {accountsEnabled ? <NotificationLink /> : null}
+      <Link
+        href="/search"
+        aria-label="Search Masjid Link"
+        aria-current={searchActive ? 'page' : undefined}
+        className={cn(navButton, 'size-11 p-0', navButtonColor('/search', searchActive), focusRing)}
+      >
+        <Search className="size-5" aria-hidden="true" />
+      </Link>
+      {accountsEnabled ? <NotificationLink /> : null}
     </>
   )
 
