@@ -103,7 +103,7 @@ async function localResults(location: string) {
   const point = await geocodeLocation(location)
   if (!point) return reply('I couldn’t identify that location. Try adding a province, state, country, or postal code.', [directory])
   const [nearby, prayers] = await Promise.allSettled([
-    searchMasjidsNearby({ location }),
+    searchMasjidsNearby({ lat: point.lat, lng: point.lng }),
     getPrayerTimes(point.lat, point.lng),
   ])
   const links = nearby.status === 'fulfilled' ? nearby.value.masjids.slice(0, 3).map(masjid => ({
