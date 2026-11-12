@@ -1,12 +1,28 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, type FormEvent } from 'react'
+import { Mic, Square } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { inputClass, primaryButton, secondaryButton } from '@/lib/site'
 
 type Mode = 'local' | 'question'
 type Result = { message: string; links?: { label: string; href: string }[]; details?: string[] }
+
+type Recognition = {
+  lang: string
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null
+  onerror: ((event: { error: string }) => void) | null
+  onend: (() => void) | null
+  start: () => void
+  stop: () => void
+  abort: () => void
+}
+
+type SpeechWindow = Window & {
+  SpeechRecognition?: new () => Recognition
+  webkitSpeechRecognition?: new () => Recognition
+}
 
 export function Assistant() {
   const [mode, setMode] = useState<Mode>('local')
@@ -14,8 +30,70 @@ export function Assistant() {
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<Result | null>(null)
 
+  const recognitionRef = useRef<Recognition | null>(null)
+  const [listening, setListening] = useState(false)
+  const [voiceStatus, setVoiceStatus] = useState('')
+
+  useEffect(() => () => {
+    const recognition = recognitionRef.current
+    recognitionRef.current = null
+    recognition?.abort()
+  }, [])
+
+  function toggleVoice() {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+      return
+    }
+
+    const browser = window as SpeechWindow
+    const SpeechRecognition = browser.SpeechRecognition ?? browser.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setVoiceStatus('Voice input is unavailable in this browser. You can type your question.')
+      return
+    }
+
+    try {
+      const recognition = new SpeechRecognition()
+      recognition.lang = 'en-CA'
+      recognition.onresult = event => {
+        if (recognitionRef.current !== recognition) return
+        const transcript = Array.from(event.results, result => result[0]?.transcript ?? '').join(' ').trim()
+        if (!transcript) return
+        setText(current => [current.trim(), transcript].filter(Boolean).join(' ').slice(0, 500))
+        setVoiceStatus('Review or edit your question before submitting.')
+      }
+      recognition.onerror = event => {
+        if (recognitionRef.current !== recognition) return
+        const denied = event.error === 'not-allowed' || event.error === 'service-not-allowed'
+        setVoiceStatus(denied
+          ? 'Allow microphone access in your browser to use voice input, or type your question.'
+          : 'Voice input couldn’t capture your question. Try again or type it.')
+      }
+      recognition.onend = () => {
+        if (recognitionRef.current !== recognition) return
+        recognitionRef.current = null
+        setListening(false)
+        setVoiceStatus(status => status === 'Listening…' ? 'No speech was captured. Try again or type your question.' : status)
+      }
+      recognitionRef.current = recognition
+      recognition.start()
+      setListening(true)
+      setVoiceStatus('Listening…')
+    } catch {
+      recognitionRef.current = null
+      setListening(false)
+      setVoiceStatus('Voice input couldn’t start. You can type your question.')
+    }
+  }
+
   function switchMode(next: Mode) {
     if (mode === next) return
+    const recognition = recognitionRef.current
+    recognitionRef.current = null
+    recognition?.abort()
+    setListening(false)
+    setVoiceStatus('')
     setMode(next)
     setText('')
     setResult(null)
@@ -23,7 +101,7 @@ export function Assistant() {
 
   async function ask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!text.trim() || busy) return
+    if (!text.trim() || busy || listening) return
     setBusy(true)
     setResult(null)
     try {
@@ -54,10 +132,20 @@ export function Assistant() {
         <label htmlFor="assistant-input" className="mb-2 block font-semibold text-navy">
           {local ? 'City or postal code' : 'Question about Islam or Connect to Masjid'}
         </label>
-        <input id="assistant-input" className={inputClass} value={text} onChange={event => setText(event.target.value)}
-          placeholder={local ? 'Toronto, Ontario' : 'What is wudu?'} maxLength={local ? 100 : 500} required />
+        <div className="flex items-center gap-2">
+          <input id="assistant-input" className={inputClass} value={text} onChange={event => setText(event.target.value)}
+            placeholder={local ? 'Toronto, Ontario' : 'What is wudu?'} maxLength={local ? 100 : 500} required />
+          {!local && (
+            <button type="button" className={`${secondaryButton} shrink-0 px-3 py-2`} onClick={toggleVoice}
+              disabled={busy} aria-label={listening ? 'Stop voice input' : 'Speak your question'}>
+              {listening ? <Square className="size-4" aria-hidden="true" /> : <Mic className="size-4" aria-hidden="true" />}
+              {listening ? 'Stop' : 'Speak'}
+            </button>
+          )}
+        </div>
+        {!local && <p role="status" className="mt-2 text-sm text-muted-foreground">{voiceStatus}</p>}
         {!local && <p className="mt-2 text-sm text-muted-foreground">Signed-in members can use AI to match questions to published answers and site pages. Please leave out private information.</p>}
-        <button type="submit" className={`${primaryButton} mt-4`} disabled={busy || !text.trim()}>
+        <button type="submit" className={`${primaryButton} mt-4`} disabled={busy || listening || !text.trim()}>
           {busy ? 'Looking up your request…' : local ? 'Find masjids and times' : 'Find an answer'}
         </button>
       </form>
