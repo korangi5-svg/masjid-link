@@ -33,7 +33,7 @@ export function PersonalizedDashboard() {
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
       <section className="rounded-3xl bg-navy p-7 text-white sm:p-10">
         <p className="text-sm font-semibold uppercase tracking-wider text-mint">Your learning, your way</p>
-        <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">Assalamu alaikum{name ? `, ${name}` : ''}</h1>
+        <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">Assalamu Alaikum{name ? `, ${name}` : ''}</h1>
         <p className="mt-3 max-w-2xl text-white/80">Lectures to inspire you. Articles to reflect on. Courses to grow with. Podcasts for the journey.</p>
         <div className="mt-6 flex flex-wrap gap-2" aria-label="Your interests">{selected.map((id) => <span key={id} className="rounded-full bg-white/15 px-3 py-1.5 text-sm">{interestLabel(id)}</span>)}</div>
       </section>
