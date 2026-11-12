@@ -27,7 +27,7 @@ function reply(message: string, links: Link[] = [], details: string[] = []) {
 }
 
 async function modelChoice(question: string, answers: KnowledgeAnswer[], request: Request): Promise<number | null> {
-  const gatewayKey = process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN
+  const gatewayKey = process.env.AI_GATEWAY_API_KEY || request.headers.get('x-vercel-oidc-token') || process.env.VERCEL_OIDC_TOKEN
   const key = gatewayKey || process.env.OPENAI_API_KEY
   const token = request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1]
   if (!key || !token) return null
