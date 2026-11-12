@@ -31,16 +31,18 @@ export function Assistant() {
   const [result, setResult] = useState<Result | null>(null)
 
   const recognitionRef = useRef<Recognition | null>(null)
+  const voiceRequest = useRef(0)
   const [listening, setListening] = useState(false)
   const [voiceStatus, setVoiceStatus] = useState('')
 
   useEffect(() => () => {
+    voiceRequest.current += 1
     const recognition = recognitionRef.current
     recognitionRef.current = null
     recognition?.abort()
   }, [])
 
-  function toggleVoice() {
+  async function toggleVoice() {
     if (recognitionRef.current) {
       recognitionRef.current.stop()
       return
@@ -53,6 +55,24 @@ export function Assistant() {
       return
     }
 
+    if (listening) return
+    const request = ++voiceRequest.current
+    setListening(true)
+    setVoiceStatus('Checking microphone access…')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream.getTracks().forEach(track => track.stop())
+    } catch (error) {
+      if (request !== voiceRequest.current) return
+      setListening(false)
+      const denied = error instanceof DOMException && error.name === 'NotAllowedError'
+      setVoiceStatus(denied
+        ? 'Microphone access was denied. Allow it for this site in your browser settings and try again.'
+        : 'The browser couldn’t open your microphone. Check that it is connected and available.')
+      return
+    }
+
+    if (request !== voiceRequest.current) return
     try {
       const recognition = new SpeechRecognition()
       recognition.lang = 'en-CA'
@@ -65,10 +85,11 @@ export function Assistant() {
       }
       recognition.onerror = event => {
         if (recognitionRef.current !== recognition) return
-        const denied = event.error === 'not-allowed' || event.error === 'service-not-allowed'
-        setVoiceStatus(denied
-          ? 'Allow microphone access in your browser to use voice input, or type your question.'
-          : 'Voice input couldn’t capture your question. Try again or type it.')
+        if (['not-allowed', 'service-not-allowed', 'network'].includes(event.error)) {
+          setVoiceStatus('Microphone access is allowed, but your browser’s speech service is unavailable. On Windows, select the question box and press Windows + H to dictate.')
+        } else {
+          setVoiceStatus('Voice input couldn’t capture your question. Try again or type it.')
+        }
       }
       recognition.onend = () => {
         if (recognitionRef.current !== recognition) return
