@@ -26,11 +26,12 @@ function reply(message: string, links: Link[] = [], details: string[] = []) {
   return NextResponse.json({ message, links, details }, { headers: { 'Cache-Control': 'no-store' } })
 }
 
-async function modelChoice(question: string, answers: KnowledgeAnswer[], request: Request): Promise<number | null> {
+async function modelChoice(question: string, answers: KnowledgeAnswer[], request: Request): Promise<number | 'unavailable' | null> {
   const gatewayKey = process.env.AI_GATEWAY_API_KEY || request.headers.get('x-vercel-oidc-token') || process.env.VERCEL_OIDC_TOKEN
   const key = gatewayKey || process.env.OPENAI_API_KEY
   const token = request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1]
-  if (!key || !token) return null
+  if (!token) return null
+  if (!key) return 'unavailable'
   try {
     const identity = await getSupabase()?.auth.getUser(token)
     const user = identity?.data.user
@@ -62,16 +63,19 @@ async function modelChoice(question: string, answers: KnowledgeAnswer[], request
       }),
     })
     if (!response.ok) {
-      console.warn('[assistant] Model request failed', { provider: gatewayKey ? 'gateway' : 'openai', status: response.status })
-      return null
+      const failure = await response.json().catch(() => null)
+      const rawCode = failure?.error?.code ?? failure?.error?.type
+      const code = typeof rawCode === 'string' && /^[a-zA-Z0-9_/-]{1,80}$/.test(rawCode) ? rawCode : undefined
+      console.warn('[assistant] Model request failed', { provider: gatewayKey ? 'gateway' : 'openai', status: response.status, code })
+      return 'unavailable'
     }
     const output: { output?: { content?: { type: string; text?: string }[] }[] } = await response.json()
     const text = output.output?.flatMap(item => item.content ?? []).find(item => item.type === 'output_text')?.text
-    if (!text) return null
+    if (!text) return 'unavailable'
     const { index } = JSON.parse(text)
     return Number.isInteger(index) && index >= 0 && index < candidates.length ? index : null
   } catch {
-    return null
+    return 'unavailable'
   }
 }
 
@@ -85,7 +89,7 @@ async function answerQuestion(question: string, request: Request) {
   const matches = routeQuestion(question, sourced).suggestions
   const candidates = [...new Map([...matches, ...sourced.slice(0, 20)].map(item => [item.id, item])).values()]
   const index = await modelChoice(question, candidates, request)
-  if (index !== null) {
+  if (typeof index === 'number') {
     if (index < candidates.length) {
       const answer = candidates[index]
       return reply(answer.answer, answer.sources)
@@ -97,7 +101,10 @@ async function answerQuestion(question: string, request: Request) {
   const page = pages.find(item => normalizeQuestion(item.label) === normalized)
   if (page) return reply(`Open ${page.label} to get started.`, [page])
   const signInLink = request.headers.has('authorization') ? [] : [{ label: 'Sign in for AI matching', href: '/login' }]
-  return reply('I couldn’t find a published answer or page that directly matches. You can search the site or submit your Islamic question for human review.', [
+  const message = index === 'unavailable'
+    ? 'AI matching is temporarily unavailable. You can still search the site or use Questions & Answers to browse published answers or request human review.'
+    : 'I couldn’t find a published answer or page that directly matches. You can search the site or submit your Islamic question for human review.'
+  return reply(message, [
     reviewLink, { label: 'Search Connect to Masjid', href: '/search' }, ...signInLink,
   ])
 }
