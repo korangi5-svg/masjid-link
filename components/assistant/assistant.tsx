@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { Mic, Square } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { getSupabase } from '@/lib/supabase'
 import { inputClass, primaryButton, secondaryButton } from '@/lib/site'
 
 type Mode = 'local' | 'question'
@@ -126,11 +125,9 @@ export function Assistant() {
     setBusy(true)
     setResult(null)
     try {
-      const session = mode === 'question' ? await getSupabase()?.auth.getSession() : null
-      const token = session?.data.session?.access_token
       const response = await fetch('/api/assistant', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode, text }),
         signal: AbortSignal.timeout(30000),
       })
@@ -165,7 +162,7 @@ export function Assistant() {
           )}
         </div>
         {!local && <p role="status" className="mt-2 text-sm text-muted-foreground">{voiceStatus}</p>}
-        {!local && <p className="mt-2 text-sm text-muted-foreground">Signed-in members can use AI to match questions to published answers and site pages. Please leave out private information.</p>}
+        {!local && <p className="mt-2 text-sm text-muted-foreground">Search published Islamic answers and site pages. You can request human review from Questions & Answers.</p>}
         <button type="submit" className={`${primaryButton} mt-4`} disabled={busy || listening || !text.trim()}>
           {busy ? 'Looking up your request…' : local ? 'Find masjids and times' : 'Find an answer'}
         </button>
