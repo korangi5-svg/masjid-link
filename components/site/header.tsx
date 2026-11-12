@@ -13,6 +13,7 @@ import { NotificationLink } from '@/components/learning/notification-link'
 
 export function Header() {
   const pathname = usePathname()
+  const searchActive = pathname === '/search'
 
   return (
     <header className="sticky top-0 z-50 border-b-[3px] border-[#234D72] bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
@@ -20,7 +21,12 @@ export function Header() {
         <Logo />
 
         <div className="flex shrink-0 items-center gap-2">
-          <Link href="/search" aria-label="Search Masjid Link" aria-current={pathname === '/search' ? 'page' : undefined} className={cn('flex size-11 items-center justify-center rounded-full text-navy hover:bg-surface', focusRing)}>
+          <Link
+            href="/search"
+            aria-label="Search Masjid Link"
+            aria-current={searchActive ? 'page' : undefined}
+            className={cn(navButton, 'size-11 p-0', navButtonColor('/search', searchActive), focusRing)}
+          >
             <Search className="size-5" aria-hidden="true" />
           </Link>
           {accountsEnabled ? <NotificationLink /> : null}
