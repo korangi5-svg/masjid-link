@@ -13,6 +13,26 @@ export const navLinks = [
   { href: '/contact', label: 'Contact' },
 ].filter((link) => eventsEnabled || link.href !== '/events')
 
+const navButtonColors: Record<string, string> = {
+  '/': 'bg-[#E0F5EC] text-[#12634F] border-[#B0E8D6]',
+  '/masjids': 'bg-[#E1F1FF] text-[#174B78] border-[#B9DAF5]',
+  '/local-services': 'bg-[#DCF7EF] text-[#12634F] border-[#B0E8D6]',
+  '/events': 'bg-[#FFE8EE] text-[#8A2946] border-[#F7C2D1]',
+  '/resources': 'bg-[#FFF1D3] text-[#77500D] border-[#F1D59A]',
+  '/islamic-websites': 'bg-[#EFE7FF] text-[#563592] border-[#D9C8FA]',
+  '/daily-learning': 'bg-[#FFECDD] text-[#853D14] border-[#F6CBAB]',
+  '/calendar': 'bg-[#E5ECFF] text-[#314B93] border-[#C6D3F8]',
+  '/about': 'bg-[#E8F3D9] text-[#416022] border-[#CBDFB0]',
+  '/contact': 'bg-[#DFF4F8] text-[#17586B] border-[#B5E1EA]',
+}
+
+export function navButtonColor(href: string, active: boolean) {
+  return active ? 'border-[#087354] bg-[#087354] text-white' : navButtonColors[href]
+}
+
+export const navButton =
+  'flex min-h-11 items-center justify-center rounded-[10px] border px-3 py-2 text-center text-sm font-semibold leading-tight transition-colors hover:brightness-95'
+
 export function isActivePath(pathname: string, href: string) {
   return href === '/' ? pathname === '/' : pathname.startsWith(href)
 }
