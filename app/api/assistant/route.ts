@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server'
+import { clarifyLanguage, isLanguage, scriptLanguage, unavailable } from '@/lib/assistant-language'
+import { interpret, localize, type AssistantContext } from '@/lib/services/assistant-ai'
+import { allowAssistantRequest } from '@/lib/services/assistant-limit'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { normalizeQuestion, routeQuestion } from '@/lib/questions'
 import { getQuestionCatalog } from '@/lib/services/question-catalog'
@@ -20,7 +23,7 @@ const pages = [
 const reviewLink = { label: 'Open Questions & Answers', href: '/questions' }
 
 function reply(message: string, links: Link[] = [], details: string[] = []) {
-  return NextResponse.json({ message, links, details }, { headers: { 'Cache-Control': 'no-store' } })
+  return { message, links, details }
 }
 
 const prayerTimeQuestion = /^(?:(?:(?:what time|when) (?:is|are) (?:the )?|(?:show me|find) (?:the )?)?(fajr|dhuhr|zuhr|asr|maghrib|isha)(?: (?:prayer|time))?|(?:(?:what are|show me|find) (?:the )?)?prayer times)(?: today)?$/i
@@ -98,23 +101,62 @@ async function localResults(location: string, prayer?: string) {
   return reply(`${point.label}. ${timing} ${results}`, [...links, directory], details)
 }
 
+function readContext(value: unknown): AssistantContext | undefined {
+  if (!value || typeof value !== 'object') return
+  const { text, query, language, mode } = value as Partial<AssistantContext>
+  if (typeof text === 'string' && text.length <= 500 && typeof query === 'string' && query.length <= 500
+    && isLanguage(language) && (mode === 'local' || mode === 'question')) return { text, query, language, mode }
+}
+
 export async function POST(request: Request) {
   const origin = request.headers.get('origin')
   if (origin && origin !== new URL(request.url).origin) {
     return NextResponse.json({ message: 'Open the assistant on Connect to Masjid.' }, { status: 403 })
   }
-
+  const headers = { 'Cache-Control': 'no-store' }
+  let language: AssistantContext['language'] = 'en'
   try {
     const body = await request.text()
-    if (body.length > 3000) return NextResponse.json({ message: 'Please shorten your request.' }, { status: 413 })
+    if (body.length > 4500) return NextResponse.json({ message: 'Please shorten your request.' }, { status: 413 })
     const input = JSON.parse(body)
     const mode = input?.mode
     const text = typeof input?.text === 'string' ? input.text.trim() : ''
     if (!text || (mode !== 'local' && mode !== 'question') || text.length > (mode === 'local' ? 100 : 500)) {
       return NextResponse.json({ message: 'Enter a location or a short question.' }, { status: 400 })
     }
-    return mode === 'local' ? await localResults(text) : await answerQuestion(text)
+
+    const previous = readContext(input.previous)
+    const priorLanguage = isLanguage(input.previousLanguage) ? input.previousLanguage : previous?.language
+    language = scriptLanguage(text) ?? priorLanguage ?? 'en'
+    let query = text
+    if (process.env.OPENAI_API_KEY) {
+      if (!allowAssistantRequest(request, 'text', 20)) {
+        return NextResponse.json({ message: unavailable[language], language }, { status: 429, headers })
+      }
+      try {
+        const detected = await interpret(text, mode, previous, priorLanguage)
+        language = detected.language
+        if (detected.unclear && !priorLanguage) return NextResponse.json({ message: clarifyLanguage[language], language }, { headers })
+        if (detected.greeting && detected.greetingReply) {
+          return NextResponse.json({ message: detected.greetingReply, language }, { headers })
+        }
+        query = detected.query
+      } catch (error) {
+        if (language !== 'en') throw error
+      }
+    } else if (language !== 'en') {
+      return NextResponse.json({ message: unavailable[language], language }, { status: 503, headers })
+    }
+
+    const result = mode === 'local' ? await localResults(query) : await answerQuestion(query)
+    const context = { text, query, mode, language }
+    if (language === 'en') return NextResponse.json({ ...result, language, context }, { headers })
+    const translated = await localize(language, text, result.message, result.details, result.links.map(link => link.label))
+    return NextResponse.json({
+      message: translated.message, details: translated.details, language, context,
+      links: result.links.map((link, index) => ({ ...link, label: translated.labels[index] })),
+    }, { headers })
   } catch {
-    return NextResponse.json({ message: 'The assistant is temporarily unavailable. Please try again.' }, { status: 503 })
+    return NextResponse.json({ message: unavailable[language], language }, { status: 503, headers })
   }
 }
