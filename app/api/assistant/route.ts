@@ -24,13 +24,14 @@ function reply(message: string, links: Link[] = [], details: string[] = []) {
 }
 
 const prayerTimeQuestion = /^(?:(?:(?:what time|when) (?:is|are) (?:the )?|(?:show me|find) (?:the )?)?(fajr|dhuhr|zuhr|asr|maghrib|isha)(?: (?:prayer|time))?|(?:(?:what are|show me|find) (?:the )?)?prayer times)(?: today)?$/i
+const namedPrayerTimeQuestion = /^what(?:['’]s| (?:is|are)) (?:the )?(fajr|dhuhr|zuhr|asr|maghrib|isha)(?: prayer)? times?(?: today)?$/i
 const locationInQuestion = /\s+(?:in|near|for)\s+(.+)$/i
 
 function readPrayerTimeQuestion(question: string) {
   const cleaned = question.trim().replace(/[?!.]+$/, '')
   const location = locationInQuestion.exec(cleaned)
   const subject = (location ? cleaned.slice(0, location.index) : cleaned).replace(/\s+/g, ' ')
-  const prayer = prayerTimeQuestion.exec(subject)
+  const prayer = prayerTimeQuestion.exec(subject) ?? namedPrayerTimeQuestion.exec(subject)
   if (!prayer || (!location && !/\s/.test(subject))) return null
 
   const place = location?.[1].replace(/\s+today$/i, '').trim()
