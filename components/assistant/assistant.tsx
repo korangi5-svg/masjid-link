@@ -256,20 +256,24 @@ export function Assistant({ paidVoice = false }: { paidVoice?: boolean }) {
         </div>
         {!local && <p role="status" className="mt-2 text-sm text-muted-foreground">{voiceStatus}</p>}
         {!local && <p className="mt-2 text-sm text-muted-foreground">{paidVoice ? 'Search published answers. Voice input and generated speech use OpenAI.' : 'Search published answers. Multilingual lookup covers wudu, the five daily prayers, and Shahadah. Read aloud uses your device’s voices.'}</p>}
-        <button type="submit" className={`${primaryButton} mt-4`} disabled={busy || listening || !text.trim()}>
-          {busy ? 'Looking up your request…' : local ? 'Find masjids and times' : 'Find an answer'}
-        </button>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button type="submit" className={primaryButton} disabled={busy || listening || !text.trim()}>
+            {busy ? 'Looking up your request…' : local ? 'Find masjids and times' : 'Find an answer'}
+          </button>
+          <button type="button" className={`${secondaryButton} px-3 py-2`}
+            onClick={() => { if (result) void toggleReading(result) }} disabled={!result || busy || listening}
+            aria-describedby={!result ? 'assistant-read-aloud-hint' : undefined}>
+            {reading ? <Square className="size-4" aria-hidden="true" /> : <Volume2 className="size-4" aria-hidden="true" />}
+            {reading ? 'Stop reading' : 'Read aloud'}
+          </button>
+        </div>
+        {!result && <p id="assistant-read-aloud-hint" className="mt-2 text-sm text-muted-foreground">Read aloud is available after a reply.</p>}
+        {audioStatus && <p role="status" className="mt-2 text-sm text-muted-foreground">{audioStatus}</p>}
       </form>
       <div aria-live="polite" aria-busy={busy}>
         {result && (
           <section lang={result.language ?? 'en'} dir="auto" aria-label="Assistant result" className="mt-5 rounded-2xl bg-surface p-5 sm:p-6">
             <p className="leading-relaxed text-navy">{result.message}</p>
-            <button type="button" className={`${secondaryButton} mt-3 px-3 py-2`}
-              onClick={() => toggleReading(result)} disabled={listening}>
-              {reading ? <Square className="size-4" aria-hidden="true" /> : <Volume2 className="size-4" aria-hidden="true" />}
-              {reading ? 'Stop reading' : 'Read aloud'}
-            </button>
-            {audioStatus && <p role="status" className="mt-2 text-sm text-muted-foreground">{audioStatus}</p>}
             {Boolean(result.details?.length) && (
               <ul className="mt-4 flex flex-wrap gap-2">
                 {result.details?.map(item => <li key={item} className="rounded-full bg-white px-3 py-1 text-sm text-navy">{item}</li>)}
