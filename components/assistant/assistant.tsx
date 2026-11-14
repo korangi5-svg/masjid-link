@@ -11,7 +11,7 @@ import type { AssistantContext } from '@/lib/services/assistant-ai'
 type Mode = 'local' | 'question'
 type Result = { message: string; language?: Language; context?: AssistantContext; links?: { label: string; href: string }[]; details?: string[] }
 
-export function Assistant() {
+export function Assistant({ paidVoice = false }: { paidVoice?: boolean }) {
   const [mode, setMode] = useState<Mode>('local')
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -79,6 +79,7 @@ export function Assistant() {
     }
 
     try {
+      if (!paidVoice) throw new Error('Use device speech')
       const response = await fetch('/api/assistant/voice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -245,7 +246,7 @@ export function Assistant() {
         <div className="flex items-center gap-2">
           <input id="assistant-input" className={inputClass} value={text} dir="auto" onChange={event => setText(event.target.value)}
             placeholder={local ? 'Toronto, Ontario' : 'What is wudu?'} maxLength={local ? 100 : 500} required />
-          {!local && (
+          {!local && paidVoice && (
             <button type="button" className={`${secondaryButton} shrink-0 px-3 py-2`} onClick={toggleVoice}
               disabled={busy || (listening && !capturing)} aria-label={capturing ? 'Stop voice input' : 'Speak your question'}>
               {capturing ? <Square className="size-4" aria-hidden="true" /> : <Mic className="size-4" aria-hidden="true" />}
@@ -254,7 +255,7 @@ export function Assistant() {
           )}
         </div>
         {!local && <p role="status" className="mt-2 text-sm text-muted-foreground">{voiceStatus}</p>}
-        {!local && <p className="mt-2 text-sm text-muted-foreground">Search published Islamic answers and site pages. Voice input and AI-generated read aloud use OpenAI.</p>}
+        {!local && <p className="mt-2 text-sm text-muted-foreground">{paidVoice ? 'Search published answers. Voice input and generated speech use OpenAI.' : 'Search published answers. Multilingual lookup covers wudu, the five daily prayers, and Shahadah. Read aloud uses your device’s voices.'}</p>}
         <button type="submit" className={`${primaryButton} mt-4`} disabled={busy || listening || !text.trim()}>
           {busy ? 'Looking up your request…' : local ? 'Find masjids and times' : 'Find an answer'}
         </button>

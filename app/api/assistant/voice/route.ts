@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const origin = request.headers.get('origin')
   if (origin && origin !== new URL(request.url).origin) return failure(403)
   const key = process.env.OPENAI_API_KEY
-  if (!key) return failure(503)
+  if (process.env.ASSISTANT_PAID_SERVICES !== 'true' || !key) return failure(503)
 
   const length = Number(request.headers.get('content-length'))
   if (request.headers.has('content-length') && (!Number.isSafeInteger(length) || length <= 0)) return failure(400)

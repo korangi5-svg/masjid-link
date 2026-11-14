@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { curatedFallback, findCuratedAnswer } from '@/lib/assistant-curated'
 import { clarifyLanguage, isLanguage, scriptLanguage, unavailable } from '@/lib/assistant-language'
 import { interpret, localize, type AssistantContext } from '@/lib/services/assistant-ai'
 import { allowAssistantRequest } from '@/lib/services/assistant-limit'
@@ -128,24 +129,30 @@ export async function POST(request: Request) {
     const previous = readContext(input.previous)
     const priorLanguage = isLanguage(input.previousLanguage) ? input.previousLanguage : previous?.language
     language = scriptLanguage(text) ?? priorLanguage ?? 'en'
+    const paidServices = process.env.ASSISTANT_PAID_SERVICES === 'true' && Boolean(process.env.OPENAI_API_KEY)
+    if (!paidServices) {
+      const curated = mode === 'question' ? findCuratedAnswer(text) : undefined
+      if (curated) return NextResponse.json({ ...curated, context: { text, query: text, mode, language: curated.language } }, { headers })
+      const fallback = curatedFallback(text)
+      if (fallback) return NextResponse.json(fallback, { headers })
+      const result = mode === 'local' ? await localResults(text) : await answerQuestion(text)
+      return NextResponse.json({ ...result, language: 'en', context: { text, query: text, mode, language: 'en' } }, { headers })
+    }
+
     let query = text
-    if (process.env.OPENAI_API_KEY) {
-      if (!allowAssistantRequest(request, 'text', 20)) {
-        return NextResponse.json({ message: unavailable[language], language }, { status: 429, headers })
+    if (!allowAssistantRequest(request, 'text', 20)) {
+      return NextResponse.json({ message: unavailable[language], language }, { status: 429, headers })
+    }
+    try {
+      const detected = await interpret(text, mode, previous, priorLanguage)
+      language = detected.language
+      if (detected.unclear && !priorLanguage) return NextResponse.json({ message: clarifyLanguage[language], language }, { headers })
+      if (detected.greeting && detected.greetingReply) {
+        return NextResponse.json({ message: detected.greetingReply, language }, { headers })
       }
-      try {
-        const detected = await interpret(text, mode, previous, priorLanguage)
-        language = detected.language
-        if (detected.unclear && !priorLanguage) return NextResponse.json({ message: clarifyLanguage[language], language }, { headers })
-        if (detected.greeting && detected.greetingReply) {
-          return NextResponse.json({ message: detected.greetingReply, language }, { headers })
-        }
-        query = detected.query
-      } catch (error) {
-        if (language !== 'en') throw error
-      }
-    } else if (language !== 'en') {
-      return NextResponse.json({ message: unavailable[language], language }, { status: 503, headers })
+      query = detected.query
+    } catch (error) {
+      if (language !== 'en') throw error
     }
 
     const result = mode === 'local' ? await localResults(query) : await answerQuestion(query)

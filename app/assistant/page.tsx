@@ -11,7 +11,7 @@ export default function AssistantPage() {
   return (
     <>
       <PageHeader eyebrow="Connect to Masjid" title="Site Assistant" description="Find a masjid, check local prayer times, or ask a question." />
-      <Assistant />
+      <Assistant paidVoice={process.env.ASSISTANT_PAID_SERVICES === 'true' && Boolean(process.env.OPENAI_API_KEY)} />
     </>
   )
 }

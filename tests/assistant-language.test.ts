@@ -15,6 +15,7 @@ const cases: { language: Language; text: string; answer: string }[] = [
 ]
 
 const originalFetch = globalThis.fetch
+const originalPaid = process.env.ASSISTANT_PAID_SERVICES
 const originalKey = process.env.OPENAI_API_KEY
 const endpoint = 'https://masjid.test/api/assistant'
 let fixture = cases[0]
@@ -27,6 +28,7 @@ function output(value: object) {
 }
 
 before(() => {
+  process.env.ASSISTANT_PAID_SERVICES = 'true'
   process.env.OPENAI_API_KEY = 'test-key'
   globalThis.fetch = async (url, request) => {
     if (providerFailure) return new Response(null, { status: 503 })
@@ -60,6 +62,8 @@ before(() => {
 })
 
 after(() => {
+  if (originalPaid === undefined) delete process.env.ASSISTANT_PAID_SERVICES
+  else process.env.ASSISTANT_PAID_SERVICES = originalPaid
   globalThis.fetch = originalFetch
   if (originalKey === undefined) delete process.env.OPENAI_API_KEY
   else process.env.OPENAI_API_KEY = originalKey
