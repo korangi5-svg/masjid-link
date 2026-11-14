@@ -15,6 +15,16 @@ const radioLinks = [
     href: 'https://quranradio.cc/eng/',
     description: 'Live Quran channel from Makkah and continuous reciter stations.',
   },
+  {
+    name: 'MP3Quran Live Radio',
+    href: 'https://www.mp3quran.net/eng/radios',
+    description: 'Live reciter stations, including streams with English and Urdu translations.',
+  },
+  {
+    name: 'Cairo Quran FM 98.2',
+    href: 'https://radio.garden/listen/quran-fm-98-2-idhaet-alqran-alkrym/GQxvGBNK',
+    description: 'Listen to Cairo’s Quran radio station live on Radio Garden.',
+  },
 ]
 
 export const metadata: Metadata = {
