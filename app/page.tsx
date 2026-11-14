@@ -1,9 +1,16 @@
+import type { Metadata } from 'next'
 import { Hero } from '@/components/home/hero'
 import { FeatureGrid } from '@/components/home/feature-grid'
 import { QuranQuote } from '@/components/home/quran-quote'
 import { YourArea } from '@/components/home/your-area'
 import Link from 'next/link'
 import { primaryButton } from '@/lib/site'
+
+export const metadata: Metadata = {
+  title: { absolute: 'Connect to Masjid | Find Local Mosques & Prayer Times' },
+  description: 'Find local masjids, check prayer times, and explore community events and Islamic resources with Connect to Masjid.',
+  alternates: { canonical: 'https://masjid-link.vercel.app/' },
+}
 
 export default function HomePage() {
   return (
