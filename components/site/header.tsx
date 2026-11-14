@@ -39,6 +39,15 @@ export function Header() {
           <MobileMenu pathname={pathname} />
         </div>
       </div>
+      <nav aria-label="Quran Radio shortcut" className="mx-auto max-w-7xl px-4 pb-3 sm:px-6 xl:hidden">
+        <Link
+          href="/quran-radio"
+          aria-current={isActivePath(pathname, '/quran-radio') ? 'page' : undefined}
+          className={cn(navButton, 'w-fit', navButtonColor('/quran-radio', isActivePath(pathname, '/quran-radio')), focusRing)}
+        >
+          Quran Radio
+        </Link>
+      </nav>
       <nav aria-label="Main" className="mx-auto hidden max-w-screen-2xl overflow-x-auto px-4 pt-1 pb-4 xl:block">
         <ul className="mx-auto flex w-max items-center gap-1.5 2xl:gap-2">
           {navLinks.map((link) => {
