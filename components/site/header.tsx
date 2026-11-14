@@ -20,7 +20,7 @@ export function Header() {
         href="/search"
         aria-label="Search Masjid Link"
         aria-current={searchActive ? 'page' : undefined}
-        className={cn(navButton, 'size-11 p-0', navButtonColor('/search', searchActive), focusRing)}
+        className={cn(navButton, 'size-11 shrink-0 p-0', navButtonColor('/search', searchActive), focusRing)}
       >
         <Search className="size-5" aria-hidden="true" />
       </Link>
@@ -39,8 +39,8 @@ export function Header() {
           <MobileMenu pathname={pathname} />
         </div>
       </div>
-      <nav aria-label="Main" className="mx-auto hidden max-w-7xl px-8 pb-4 xl:block">
-        <ul className="flex flex-wrap items-center justify-center gap-2">
+      <nav aria-label="Main" className="mx-auto hidden max-w-screen-2xl overflow-x-auto px-4 pt-1 pb-4 xl:block">
+        <ul className="mx-auto flex w-max items-center gap-1.5 2xl:gap-2">
           {navLinks.map((link) => {
             const active = isActivePath(pathname, link.href)
             const isContact = link.href === '/contact'
@@ -51,7 +51,7 @@ export function Header() {
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     navButton,
-                    'whitespace-nowrap',
+                    'whitespace-nowrap px-2 2xl:px-3',
                     navButtonColor(link.href, active),
                     focusRing,
                   )}
