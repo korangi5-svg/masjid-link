@@ -4,9 +4,22 @@ import { focusRing } from '@/lib/site'
 
 const stream = 'https://qurango.net/radio/alzain_mohammad_ahmad'
 
+const radioLinks = [
+  {
+    name: 'Quran.com Radio',
+    href: 'https://quran.com/radio',
+    description: 'Curated Quran recitations and stations by reciter.',
+  },
+  {
+    name: 'Quran Radio',
+    href: 'https://quranradio.cc/eng/',
+    description: 'Live Quran channel from Makkah and continuous reciter stations.',
+  },
+]
+
 export const metadata: Metadata = {
   title: 'Quran Radio',
-  description: 'Listen to a live stream of Quran recitation.',
+  description: 'Listen to live Quran recitation and explore more Quran radio stations.',
 }
 
 export default function QuranRadioPage() {
@@ -24,6 +37,20 @@ export default function QuranRadioPage() {
             {' · '}
             <a className={`underline underline-offset-4 ${focusRing}`} href={stream}>Open stream directly</a>
           </p>
+        </section>
+
+        <section aria-labelledby="more-stations" className="mt-8">
+          <h2 id="more-stations" className="text-xl font-semibold text-[#682575]">More Quran radio stations</h2>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {radioLinks.map(({ name, href, description }) => (
+              <li key={href} className="rounded-2xl border border-[#E2BCEB] bg-[#FAF1FC]">
+                <a className={`block h-full rounded-2xl p-4 text-[#682575] ${focusRing}`} href={href}>
+                  <span className="font-semibold underline underline-offset-4">{name}</span>
+                  <span className="mt-1 block text-sm">{description}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
         </section>
       </div>
     </>
