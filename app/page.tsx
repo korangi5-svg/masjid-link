@@ -9,6 +9,7 @@ import { primaryButton } from '@/lib/site'
 export const metadata: Metadata = {
   title: { absolute: 'Connect to Masjid | Find Local Mosques & Prayer Times' },
   description: 'Find local masjids, check prayer times, and explore community events and Islamic resources with Connect to Masjid.',
+  verification: { google: 'S9wXXFIoJ5wlUMcHVf6HCru6G6DNGKkCc7Vt0NlCOjw' },
   alternates: { canonical: 'https://masjid-link.vercel.app/' },
 }
 
