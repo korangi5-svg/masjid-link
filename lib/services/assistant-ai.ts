@@ -28,7 +28,14 @@ async function structured(instructions: string, input: unknown, properties: Reco
       } },
     }),
   })
-  if (!response.ok) throw new Error('Assistant provider request failed')
+  if (!response.ok) {
+    const data = await response.json().catch(() => null)
+    const code = data?.error?.code
+    console.warn('Assistant text provider failure', {
+      status: response.status, code: typeof code === 'string' && /^[a-z0-9_-]{1,80}$/i.test(code) ? code : 'unknown',
+    })
+    throw new Error('Assistant provider request failed')
+  }
   const data = await response.json()
   const output = (data.output ?? [])
     .filter((item: { type: string }) => item.type === 'message')

@@ -49,7 +49,14 @@ export async function POST(request: Request) {
       body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: 'alloy', input: text,
         instructions: `Read naturally in language ${language}. Preserve Islamic pronunciation and do not translate.` }),
     })
-    if (!response.ok || !response.body) return failure(503)
+    if (!response.ok || !response.body) {
+      const data = await response.json().catch(() => null)
+      const code = data?.error?.code
+      console.warn('Assistant speech provider failure', {
+        status: response.status, code: typeof code === 'string' && /^[a-z0-9_-]{1,80}$/i.test(code) ? code : 'unknown',
+      })
+      return failure(503)
+    }
     return new Response(response.body, { headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' } })
   } catch {
     return failure(503)
