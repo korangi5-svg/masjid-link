@@ -7,9 +7,8 @@ export const maxDuration = 150
 const fields = ['summary', 'tags', 'categories', 'seo_title', 'seo_description', 'facebook', 'instagram', 'x'] as const
 const reply = (data: unknown, status = 200) => NextResponse.json(data, { status, headers: { 'Cache-Control': 'private, no-store' } })
 
-export async function POST(request: Request) {
+async function checkPublishingAccess(request: Request) {
   const db = getSupabaseAdmin()
-  const key = process.env.OPENAI_API_KEY
   if (!db) return reply({ error: 'Publishing is unavailable.' }, 503)
   const token = request.headers.get('authorization')?.match(/^Bearer (\S+)$/)?.[1]
   if (!token) return reply({ error: 'Sign in to publish.' }, 401)
@@ -17,6 +16,21 @@ export async function POST(request: Request) {
   if (!user?.email_confirmed_at || user.id !== '3f126b26-2c3f-43d5-9c7f-182fcb64f1c2') {
     return reply({ error: 'Publishing access is limited to the site owner.' }, 403)
   }
+
+  return { db, user }
+}
+
+export async function GET(request: Request) {
+  const access = await checkPublishingAccess(request)
+  if (access instanceof Response) return access
+  return reply({ canPublish: true })
+}
+
+export async function POST(request: Request) {
+  const access = await checkPublishingAccess(request)
+  if (access instanceof Response) return access
+  const { db, user } = access
+  const key = process.env.OPENAI_API_KEY
 
   const input = await request.json().catch(() => null)
   const title = typeof input?.title === 'string' ? input.title.trim() : ''

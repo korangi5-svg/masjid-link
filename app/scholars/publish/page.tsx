@@ -1,11 +1,45 @@
 'use client'
 
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { getSupabase } from '@/lib/supabase'
 import { inputClass, primaryButton } from '@/lib/site'
 
 export default function PublishPage() {
+  const router = useRouter()
+  const [canPublish, setCanPublish] = useState(false)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const { signal } = controller
+
+    async function checkAccess() {
+      try {
+        const session = await getSupabase()?.auth.getSession()
+        const token = session?.data.session?.access_token
+        if (signal.aborted) return
+        if (token) {
+          const response = await fetch('/api/scholar-publishing', {
+            headers: { Authorization: `Bearer ${token}` },
+            signal,
+          })
+          if (signal.aborted) return
+          if (response.ok) {
+            setCanPublish(true)
+            return
+          }
+        }
+      } catch {
+        if (signal.aborted) return
+      }
+      router.replace('/')
+    }
+
+    void checkAccess()
+    return () => controller.abort()
+  }, [router])
+
   const submission = useRef<{ id: string; title: string; body: string } | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -40,10 +74,11 @@ export default function PublishPage() {
     }
   }
 
+  if (!canPublish) return null
+
   return <main className="mx-auto max-w-3xl px-4 py-12">
     <h1 className="text-4xl font-bold text-navy">Publish a scholar article</h1>
-    <p className="my-4">Sign in with the owner account. Article text is sent to OpenAI to generate a summary, tags, categories, SEO metadata and social captions. The article goes public when generation succeeds.</p>
-    <Link href="/login" className="underline">Sign in</Link>
+    <p className="my-4">Article text is sent to OpenAI to generate a summary, tags, categories, SEO metadata and social captions. The article goes public when generation succeeds.</p>
     {published ? <section className="mt-6 space-y-4">
       <p role="status">Article published. <Link href={`/scholars/articles/${published.id}`} className="underline">Read the article</Link></p>
       <h2 className="text-xl font-bold">Social drafts</h2>
