@@ -33,7 +33,8 @@ const navButtonColors: Record<string, string> = {
 }
 
 export function navButtonColor(href: string, active: boolean) {
-  return active ? 'border-[#087354] bg-[#087354] text-white' : navButtonColors[href]
+  const colors = active ? 'border-[#087354] bg-[#087354] text-white' : navButtonColors[href]
+  return href === '/weekly-quiz' ? `${colors} font-bold!` : colors
 }
 
 export const navButton =
