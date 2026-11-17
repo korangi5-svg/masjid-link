@@ -11,7 +11,25 @@ import type { AssistantContext } from '@/lib/services/assistant-ai'
 type Mode = 'local' | 'question'
 type Result = { message: string; language?: Language; context?: AssistantContext; links?: { label: string; href: string }[]; details?: string[] }
 
-export function Assistant({ paidVoice = false }: { paidVoice?: boolean }) {
+type BrowserRecognition = {
+  lang: string
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null
+  onerror: ((event: { error: string }) => void) | null
+  onend: (() => void) | null
+  start: () => void
+  stop: () => void
+  abort: () => void
+}
+
+function recognitionConstructor() {
+  const browser = window as Window & {
+    SpeechRecognition?: new () => BrowserRecognition
+    webkitSpeechRecognition?: new () => BrowserRecognition
+  }
+  return browser.SpeechRecognition ?? browser.webkitSpeechRecognition
+}
+
+export function Assistant() {
   const [mode, setMode] = useState<Mode>('local')
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -51,144 +69,124 @@ export function Assistant({ paidVoice = false }: { paidVoice?: boolean }) {
     setAudioStatus('')
   }
 
-  async function toggleReading(answer: Result) {
+  function toggleReading(answer: Result) {
     if (playback.current) return stopReading()
 
-    const controller = new AbortController()
-    let audio: HTMLAudioElement | undefined
-    let url: string | undefined
-    let synthesizing = false
-    const active = {
-      cancel() {
-        controller.abort()
-        audio?.pause()
-        if (url) URL.revokeObjectURL(url)
-        if (synthesizing) window.speechSynthesis.cancel()
-      },
+    const lang = answer.language ?? 'en'
+    const synthesis = window.speechSynthesis
+    if (!synthesis || typeof SpeechSynthesisUtterance !== 'function') {
+      setAudioStatus(unavailable[lang])
+      return
     }
+
+    const spoken = [answer.message, ...(answer.details ?? [])].join(' ').slice(0, 2500)
+    const speech = new SpeechSynthesisUtterance(spoken)
+    const voices = synthesis.getVoices()
+    const voice = voices.find(voice => voice.lang.toLowerCase() === locales[lang].toLowerCase())
+      ?? voices.find(voice => voice.lang.toLowerCase().split('-')[0] === lang)
+    speech.lang = voice?.lang ?? locales[lang]
+    if (voice) speech.voice = voice
+
+    const active = { cancel: () => synthesis.cancel() }
     playback.current = active
     setReading(true)
     setAudioStatus('')
-    const lang = answer.language ?? 'en'
-    const spoken = [answer.message, ...(answer.details ?? [])].join(' ').slice(0, 2500)
-    const done = () => { if (playback.current === active) stopReading() }
+    speech.onend = () => { if (playback.current === active) stopReading() }
     const failed = () => {
       if (playback.current !== active) return
       stopReading()
       setAudioStatus(unavailable[lang])
     }
-
+    speech.onerror = failed
     try {
-      if (!paidVoice) throw new Error('Use device speech')
-      const response = await fetch('/api/assistant/voice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: spoken, language: lang }),
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
-      })
-      if (!response.ok) throw new Error('Speech request failed')
-      const blob = await response.blob()
-      if (playback.current !== active) return
-      url = URL.createObjectURL(blob)
-      audio = new Audio(url)
-      audio.onended = done
-      await audio.play()
-      audio.onerror = failed
+      synthesis.speak(speech)
     } catch {
-      if (playback.current !== active) return
-      const synthesis = window.speechSynthesis
-      if (!synthesis || typeof SpeechSynthesisUtterance !== 'function') return failed()
-      const voice = synthesis.getVoices().find(voice => voice.lang.toLowerCase() === locales[lang].toLowerCase())
-        ?? synthesis.getVoices().find(voice => voice.lang.toLowerCase().split('-')[0] === lang)
-      if (!voice && lang !== 'en') return failed()
-      const speech = new SpeechSynthesisUtterance(spoken)
-      speech.lang = voice?.lang ?? locales[lang]
-      if (voice) speech.voice = voice
-      speech.onend = done
-      speech.onerror = failed
-      try {
-        synthesizing = true
-        synthesis.speak(speech)
-      } catch { failed() }
+      failed()
     }
   }
 
-  async function toggleVoice() {
+  function toggleVoice() {
     if (recognitionRef.current) {
       recognitionRef.current.stop()
       return
     }
 
-    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder !== 'function') {
-      setVoiceStatus('Voice input is unavailable in this browser. You can type your question.')
+    const Recognition = recognitionConstructor()
+    if (!Recognition) {
+      setVoiceStatus('This browser doesn’t support dictation. You can type your question or use your device’s dictation.')
       return
     }
 
     stopReading()
     const request = ++voiceRequest.current
-    const controller = new AbortController()
-    let stream: MediaStream | undefined
-    let recorder: MediaRecorder | undefined
+    const recognition = new Recognition()
+    recognition.lang = navigator.language || 'en-CA'
+    let transcript = ''
     let timer: ReturnType<typeof setTimeout> | undefined
-    const release = () => {
-      clearTimeout(timer)
-      stream?.getTracks().forEach(track => track.stop())
-    }
-    const stop = () => { if (recorder?.state === 'recording') recorder.stop() }
-    recognitionRef.current = { stop, abort() { controller.abort(); stop(); release() } }
-    setListening(true)
-    setVoiceStatus('Checking microphone access…')
 
     function finish(status: string) {
       if (request !== voiceRequest.current) return
+      clearTimeout(timer)
+      voiceRequest.current += 1
       recognitionRef.current = null
       setListening(false)
       setCapturing(false)
       setVoiceStatus(status)
     }
 
+    function stop() {
+      setCapturing(false)
+      setVoiceStatus('Finishing dictation…')
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        finish('Dictation timed out. You can type your question.')
+        recognition.abort()
+      }, 8000)
+      try {
+        recognition.stop()
+      } catch {
+        finish('Dictation couldn’t finish. You can type your question.')
+      }
+    }
+
+    recognitionRef.current = {
+      stop,
+      abort() {
+        clearTimeout(timer)
+        recognition.abort()
+      },
+    }
+    recognition.onresult = event => {
+      if (request !== voiceRequest.current) return
+      transcript = Array.from(event.results, result => result[0]?.transcript ?? '').join(' ').trim().slice(0, 500)
+    }
+    recognition.onerror = ({ error }) => {
+      if (error === 'not-allowed' || error === 'service-not-allowed') {
+        finish('Microphone access or browser dictation is blocked. Check your browser settings or type your question.')
+      } else if (error === 'no-speech') {
+        finish('No speech was detected. Try again or type your question.')
+      } else {
+        finish('Browser dictation is unavailable. You can type your question or use your device’s dictation.')
+      }
+    }
+    recognition.onend = () => {
+      if (request !== voiceRequest.current) return
+      if (transcript) {
+        setText(transcript)
+        finish('Review or edit your question before submitting.')
+      } else {
+        finish('No speech was detected. Try again or type your question.')
+      }
+    }
+
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      if (controller.signal.aborted) { release(); return }
-      const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type))
-      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
-      const chunks: Blob[] = []
-      recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data) }
-      recorder.onerror = () => {
-        controller.abort()
-        release()
-        finish('Voice input couldn’t capture your question. Try again or type it.')
-      }
-      recorder.onstop = async () => {
-        release()
-        if (controller.signal.aborted || request !== voiceRequest.current) return
-        setCapturing(false)
-        setVoiceStatus('Transcribing…')
-        try {
-          const audio = new Blob(chunks, { type: recorder?.mimeType || chunks[0]?.type })
-          if (!audio.size) return finish('No speech was captured. Try again or type your question.')
-          const response = await fetch('/api/assistant/voice', {
-            method: 'POST', body: audio, signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
-          })
-          if (!response.ok) throw new Error('Transcription failed')
-          const { text: transcript } = await response.json()
-          if (request !== voiceRequest.current) return
-          if (typeof transcript !== 'string' || !transcript.trim()) return finish('No speech was captured. Try again or type your question.')
-          setText(transcript)
-          finish('Review or edit your question before submitting.')
-        } catch {
-          finish('Voice input couldn’t transcribe your question. Try again or type it.')
-        }
-      }
-      recorder.start()
-      timer = setTimeout(stop, 20_000)
+      recognition.start()
+      setListening(true)
       setCapturing(true)
       setVoiceStatus('Listening…')
-    } catch (error) {
-      release()
-      const denied = error instanceof DOMException && error.name === 'NotAllowedError'
-      finish(denied ? 'Microphone access was denied. Allow it in your browser settings or type your question.'
-        : 'Voice input couldn’t start. You can type your question.')
+      timer = setTimeout(stop, 20000)
+    } catch {
+      finish('Browser dictation couldn’t start. You can type your question.')
     }
   }
 
@@ -246,7 +244,7 @@ export function Assistant({ paidVoice = false }: { paidVoice?: boolean }) {
         <div className="flex items-center gap-2">
           <input id="assistant-input" className={inputClass} value={text} dir="auto" onChange={event => setText(event.target.value)}
             placeholder={local ? 'Toronto, Ontario' : 'What is wudu?'} maxLength={local ? 100 : 500} required />
-          {!local && paidVoice && (
+          {!local && (
             <button type="button" className={`${secondaryButton} shrink-0 px-3 py-2`} onClick={toggleVoice}
               disabled={busy || (listening && !capturing)} aria-label={capturing ? 'Stop voice input' : 'Speak your question'}>
               {capturing ? <Square className="size-4" aria-hidden="true" /> : <Mic className="size-4" aria-hidden="true" />}
@@ -255,7 +253,7 @@ export function Assistant({ paidVoice = false }: { paidVoice?: boolean }) {
           )}
         </div>
         {!local && <p role="status" className="mt-2 text-sm text-muted-foreground">{voiceStatus}</p>}
-        {!local && <p className="mt-2 text-sm text-muted-foreground">{paidVoice ? 'Search published answers. Voice input and generated speech use OpenAI.' : 'Search published answers. Multilingual lookup covers wudu, the five daily prayers, and Shahadah. Read aloud uses your device’s voices.'}</p>}
+        {!local && <p className="mt-2 text-sm text-muted-foreground">Speak uses your browser’s language and may send audio to its speech provider. Read aloud uses your browser’s voices.</p>}
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="submit" className={primaryButton} disabled={busy || listening || !text.trim()}>
             {busy ? 'Looking up your request…' : local ? 'Find masjids and times' : 'Find an answer'}
