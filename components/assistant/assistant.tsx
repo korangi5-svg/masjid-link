@@ -13,13 +13,27 @@ type Result = { message: string; language?: Language; context?: AssistantContext
 
 type BrowserRecognition = {
   lang: string
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null
+  interimResults: boolean
+  onstart: (() => void) | null
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null
   onerror: ((event: { error: string }) => void) | null
   onend: (() => void) | null
   start: () => void
   stop: () => void
   abort: () => void
 }
+
+const dictationLanguages = [
+  ['en-CA', 'English (Canada)'],
+  ['en-US', 'English (United States)'],
+  ['en-GB', 'English (United Kingdom)'],
+  [locales.ar, 'العربية'],
+  [locales.bn, 'বাংলা'],
+  [locales.hi, 'हिन्दी'],
+  [locales.id, 'Bahasa Indonesia'],
+  [locales.zh, '普通话'],
+  [locales.ur, 'اردو'],
+] as const
 
 function recognitionConstructor() {
   const browser = window as Window & {
@@ -29,7 +43,7 @@ function recognitionConstructor() {
   return browser.SpeechRecognition ?? browser.webkitSpeechRecognition
 }
 
-export function Assistant() {
+export function Assistant({ serverDictation }: { serverDictation: boolean }) {
   const [mode, setMode] = useState<Mode>('local')
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -46,6 +60,7 @@ export function Assistant() {
   const voiceRequest = useRef(0)
   const [listening, setListening] = useState(false)
   const [voiceStatus, setVoiceStatus] = useState('')
+  const [speechLocale, setSpeechLocale] = useState('')
 
   useEffect(() => () => {
     voiceRequest.current += 1
@@ -111,6 +126,11 @@ export function Assistant() {
       return
     }
 
+    if (serverDictation && navigator.mediaDevices?.getUserMedia && typeof MediaRecorder === 'function') {
+      void recordVoice()
+      return
+    }
+
     const Recognition = recognitionConstructor()
     if (!Recognition) {
       setVoiceStatus('This browser doesn’t support dictation. You can type your question or use your device’s dictation.')
@@ -119,9 +139,17 @@ export function Assistant() {
 
     stopReading()
     const request = ++voiceRequest.current
-    const recognition = new Recognition()
-    recognition.lang = navigator.language || 'en-CA'
+    let recognition: BrowserRecognition
+    try {
+      recognition = new Recognition()
+      recognition.lang = speechLocale || navigator.language || locales.en
+      recognition.interimResults = true
+    } catch {
+      setVoiceStatus('Browser dictation couldn’t start. You can type your question.')
+      return
+    }
     let transcript = ''
+    let stopping = false
     let timer: ReturnType<typeof setTimeout> | undefined
 
     function finish(status: string) {
@@ -131,10 +159,13 @@ export function Assistant() {
       recognitionRef.current = null
       setListening(false)
       setCapturing(false)
-      setVoiceStatus(status)
+      if (transcript) setText(transcript)
+      setVoiceStatus(transcript ? 'Review or edit your question before submitting.' : status)
     }
 
     function stop() {
+      if (request !== voiceRequest.current || stopping) return
+      stopping = true
       setCapturing(false)
       setVoiceStatus('Finishing dictation…')
       clearTimeout(timer)
@@ -156,37 +187,131 @@ export function Assistant() {
         recognition.abort()
       },
     }
+    recognition.onstart = () => {
+      if (request === voiceRequest.current && !stopping) setVoiceStatus('Listening…')
+    }
     recognition.onresult = event => {
       if (request !== voiceRequest.current) return
-      transcript = Array.from(event.results, result => result[0]?.transcript ?? '').join(' ').trim().slice(0, 500)
+      const results = Array.from(event.results)
+      transcript = results.filter(result => result.isFinal)
+        .map(result => result[0]?.transcript ?? '').join(' ').trim().slice(0, 500)
+      if (!stopping) {
+        const preview = results.map(result => result[0]?.transcript ?? '').join(' ').trim().slice(0, 500)
+        if (preview) setVoiceStatus(preview)
+      }
     }
     recognition.onerror = ({ error }) => {
-      if (error === 'not-allowed' || error === 'service-not-allowed') {
-        finish('Microphone access or browser dictation is blocked. Check your browser settings or type your question.')
+      if (error === 'not-allowed') {
+        finish('Allow microphone access for this site in your browser, then try again.')
+      } else if (error === 'audio-capture') {
+        finish('Your microphone couldn’t be accessed. Check your device’s microphone settings or type your question.')
+      } else if (error === 'language-not-supported' || error === 'language-unavailable') {
+        finish('Your browser couldn’t recognize this language. Choose another speech language or type your question.')
+      } else if (error === 'network') {
+        finish('The browser’s speech service couldn’t connect. Try again or type your question.')
+      } else if (error === 'service-not-allowed') {
+        finish('Your browser blocked its speech service. You can type your question or use your device’s dictation.')
       } else if (error === 'no-speech') {
         finish('No speech was detected. Try again or type your question.')
       } else {
         finish('Browser dictation is unavailable. You can type your question or use your device’s dictation.')
       }
     }
-    recognition.onend = () => {
+    recognition.onend = () => finish('No speech was detected. Try again or type your question.')
+
+    try {
+      setListening(true)
+      setCapturing(true)
+      setVoiceStatus('Starting microphone…')
+      timer = setTimeout(stop, 20000)
+      recognition.start()
+    } catch {
+      finish('Browser dictation couldn’t start. You can type your question.')
+    }
+  }
+
+  async function recordVoice() {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder !== 'function') {
+      setVoiceStatus('Voice input is unavailable in this browser. You can type your question.')
+      return
+    }
+
+    stopReading()
+    const request = ++voiceRequest.current
+    const controller = new AbortController()
+    let stream: MediaStream | undefined
+    let recorder: MediaRecorder | undefined
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const release = () => {
+      clearTimeout(timer)
+      stream?.getTracks().forEach(track => track.stop())
+      stream = undefined
+    }
+    const stop = () => {
+      if (recorder?.state !== 'recording') return
+      setCapturing(false)
+      setVoiceStatus('Finishing recording…')
+      recorder.stop()
+    }
+    recognitionRef.current = { stop, abort() { controller.abort(); release() } }
+    setListening(true)
+    setVoiceStatus('Checking microphone access…')
+
+    function finish(status: string) {
       if (request !== voiceRequest.current) return
-      if (transcript) {
-        setText(transcript)
-        finish('Review or edit your question before submitting.')
-      } else {
-        finish('No speech was detected. Try again or type your question.')
-      }
+      recognitionRef.current = null
+      setListening(false)
+      setCapturing(false)
+      setVoiceStatus(status)
     }
 
     try {
-      recognition.start()
-      setListening(true)
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (controller.signal.aborted) { release(); return }
+      const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type))
+      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+      const chunks: Blob[] = []
+      recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data) }
+      recorder.onerror = () => {
+        controller.abort()
+        release()
+        finish('Voice input couldn’t capture your question. Try again or type it.')
+      }
+      recorder.onstop = async () => {
+        release()
+        if (controller.signal.aborted || request !== voiceRequest.current) return
+        setCapturing(false)
+        setVoiceStatus('Transcribing…')
+        try {
+          const audio = new Blob(chunks, { type: recorder?.mimeType || chunks[0]?.type })
+          if (!audio.size) return finish('No speech was captured. Try again or type your question.')
+          const response = await fetch('/api/assistant/voice', {
+            method: 'POST',
+            headers: speechLocale ? { 'X-Speech-Language': speechLocale.split('-')[0] } : undefined,
+            body: audio,
+            signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
+          })
+          if (response.status === 422) return finish('No speech was captured. Try again or type your question.')
+          if (response.status === 429) return finish('Too many voice requests. Wait a moment and try again.')
+          if (!response.ok) throw new Error('Transcription failed')
+          const { text: transcript } = await response.json()
+          if (request !== voiceRequest.current) return
+          if (typeof transcript !== 'string' || !transcript.trim()) return finish('No speech was captured. Try again or type your question.')
+          setText(transcript)
+          finish('Review or edit your question before submitting.')
+        } catch {
+          finish('Voice input couldn’t transcribe your question. Try again or type it.')
+        }
+      }
+      recorder.start()
+      timer = setTimeout(stop, 20_000)
       setCapturing(true)
-      setVoiceStatus('Listening…')
-      timer = setTimeout(stop, 20000)
-    } catch {
-      finish('Browser dictation couldn’t start. You can type your question.')
+      setVoiceStatus('Recording… Select Stop when you’re done.')
+    } catch (error) {
+      release()
+      const denied = error instanceof DOMException && error.name === 'NotAllowedError'
+      finish(denied ? 'Microphone access was denied. Allow it in your browser settings or type your question.'
+        : 'Voice input couldn’t start. You can type your question.')
     }
   }
 
@@ -242,7 +367,7 @@ export function Assistant() {
           {local ? 'City or postal code' : 'Question about Islam or Connect to Masjid'}
         </label>
         <div className="flex items-center gap-2">
-          <input id="assistant-input" className={inputClass} value={text} dir="auto" onChange={event => setText(event.target.value)}
+          <input id="assistant-input" className={inputClass} value={text} readOnly={listening} dir="auto" onChange={event => setText(event.target.value)}
             placeholder={local ? 'Toronto, Ontario' : 'What is wudu?'} maxLength={local ? 100 : 500} required />
           {!local && (
             <button type="button" className={`${secondaryButton} shrink-0 px-3 py-2`} onClick={toggleVoice}
@@ -253,7 +378,17 @@ export function Assistant() {
           )}
         </div>
         {!local && <p role="status" className="mt-2 text-sm text-muted-foreground">{voiceStatus}</p>}
-        {!local && <p className="mt-2 text-sm text-muted-foreground">Speak uses your browser’s language and may send audio to its speech provider. Read aloud uses your browser’s voices.</p>}
+        {!local && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+            <label htmlFor="assistant-speech-language">Speech language</label>
+            <select id="assistant-speech-language" className="rounded-md border border-border bg-background px-2 py-1"
+              value={speechLocale} disabled={busy || listening} onChange={event => setSpeechLocale(event.target.value)}>
+              <option value="">{serverDictation ? 'Detect automatically' : 'Browser default'}</option>
+              {dictationLanguages.map(([locale, label]) => <option key={locale} value={locale}>{label}</option>)}
+            </select>
+          </div>
+        )}
+        {!local && <p className="mt-2 text-sm text-muted-foreground">{serverDictation ? 'Speak sends your recording to OpenAI for transcription on supported browsers. Otherwise your browser may use its own speech provider.' : 'Your browser may send microphone audio to its speech provider.'} Read aloud uses your browser’s voices.</p>}
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="submit" className={primaryButton} disabled={busy || listening || !text.trim()}>
             {busy ? 'Looking up your request…' : local ? 'Find masjids and times' : 'Find an answer'}

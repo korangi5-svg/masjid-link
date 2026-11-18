@@ -7,6 +7,7 @@ const nextConfig = {
     unoptimized: true,
   },
   async headers() {
+    // Client-side navigation keeps the original document’s permissions policy.
     return [
       {
         source: '/:path*',
@@ -15,12 +16,6 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=63072000' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
-        ],
-      },
-      {
-        source: '/assistant',
-        headers: [
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=(self)' },
         ],
       },

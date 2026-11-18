@@ -31,10 +31,20 @@ export async function POST(request: Request) {
       if (!bytes.byteLength || bytes.byteLength > maxAudioBytes) return failure(413)
       const body = new FormData()
       body.set('file', new Blob([bytes], { type }), `question.${type.split('/')[1]}`)
-      body.set('model', process.env.ASSISTANT_TRANSCRIPTION_MODEL || 'gpt-4o-transcribe')
+      const model = process.env.ASSISTANT_TRANSCRIPTION_MODEL || 'gpt-transcribe'
+      body.set('model', model)
+      const language = request.headers.get('x-speech-language')
+      if (isLanguage(language)) body.set(model === 'gpt-transcribe' ? 'languages[]' : 'language', language)
       body.set('prompt', 'Preserve the spoken language and code-switching. Islamic terms may include Assalamu Alaikum, wudu, salah, namaz, Jumu’ah, and masjid.')
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', { method: 'POST', headers, body, signal })
-      if (!response.ok) return failure(503)
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        const code = data?.error?.code
+        console.warn('Assistant transcription provider failure', {
+          status: response.status, code: typeof code === 'string' && /^[a-z0-9_-]{1,80}$/i.test(code) ? code : 'unknown',
+        })
+        return failure(503)
+      }
       const { text } = await response.json()
       if (typeof text !== 'string' || !text.trim()) return failure(422)
       return NextResponse.json({ text: text.trim().slice(0, 500) }, { headers: { 'Cache-Control': 'no-store' } })
