@@ -12,6 +12,25 @@ export const knowledgeBase: KnowledgeAnswer[] = [
     sources: [{ label: 'Sahih al-Bukhari 8', href: 'https://sunnah.com/bukhari:8' }, { label: 'New Muslim Path', href: '/learning-path' }],
   },
   {
+    id: 'hajj',
+    question: 'What is Hajj and where is it performed?',
+    answer: 'Hajj is the pilgrimage to Makkah, Saudi Arabia. It is one of the five pillars of Islam and is obligatory once in a lifetime for Muslims who are able to undertake it. Pilgrims perform rites at the Kaaba and at nearby sites, including Mina, Arafat, and Muzdalifah.',
+    category: 'Faith',
+    keywords: ['hajj', 'pilgrimage', 'makkah', 'mecca', 'kaaba', 'arafat', 'mina', 'muzdalifah'],
+    aliases: [
+      'what is hajj',
+      'what is the hajj',
+      'where is hajj performed',
+      'where do muslims go for hajj',
+      'what is hajj and where do we go to perform it',
+      'what is the hajj and where do we have to go for perform',
+    ],
+    sources: [
+      { label: 'Quran 3:97', href: 'https://quran.com/3/97' },
+      { label: 'Sahih Muslim 1218a', href: 'https://sunnah.com/muslim:1218a' },
+    ],
+  },
+  {
     id: 'what-is-islam',
     question: 'What is Islam?',
     answer: 'Islam is a monotheistic faith centred on worshipping Allah alone and following the teachings of the Prophet Muhammad ﷺ. Its foundational practices include the testimony of faith, prayer, obligatory giving, fasting during Ramadan, and pilgrimage for those who are able.',
