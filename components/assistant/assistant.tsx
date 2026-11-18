@@ -43,7 +43,7 @@ function recognitionConstructor() {
   return browser.SpeechRecognition ?? browser.webkitSpeechRecognition
 }
 
-export function Assistant() {
+export function Assistant({ serverDictation }: { serverDictation: boolean }) {
   const [mode, setMode] = useState<Mode>('local')
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -123,6 +123,11 @@ export function Assistant() {
   function toggleVoice() {
     if (recognitionRef.current) {
       recognitionRef.current.stop()
+      return
+    }
+
+    if (serverDictation && navigator.mediaDevices?.getUserMedia && typeof MediaRecorder === 'function') {
+      void recordVoice()
       return
     }
 
@@ -225,6 +230,91 @@ export function Assistant() {
     }
   }
 
+  async function recordVoice() {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder !== 'function') {
+      setVoiceStatus('Voice input is unavailable in this browser. You can type your question.')
+      return
+    }
+
+    stopReading()
+    const request = ++voiceRequest.current
+    const controller = new AbortController()
+    let stream: MediaStream | undefined
+    let recorder: MediaRecorder | undefined
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const release = () => {
+      clearTimeout(timer)
+      stream?.getTracks().forEach(track => track.stop())
+      stream = undefined
+    }
+    const stop = () => {
+      if (recorder?.state !== 'recording') return
+      setCapturing(false)
+      setVoiceStatus('Finishing recording…')
+      recorder.stop()
+    }
+    recognitionRef.current = { stop, abort() { controller.abort(); release() } }
+    setListening(true)
+    setVoiceStatus('Checking microphone access…')
+
+    function finish(status: string) {
+      if (request !== voiceRequest.current) return
+      recognitionRef.current = null
+      setListening(false)
+      setCapturing(false)
+      setVoiceStatus(status)
+    }
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (controller.signal.aborted) { release(); return }
+      const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type))
+      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+      const chunks: Blob[] = []
+      recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data) }
+      recorder.onerror = () => {
+        controller.abort()
+        release()
+        finish('Voice input couldn’t capture your question. Try again or type it.')
+      }
+      recorder.onstop = async () => {
+        release()
+        if (controller.signal.aborted || request !== voiceRequest.current) return
+        setCapturing(false)
+        setVoiceStatus('Transcribing…')
+        try {
+          const audio = new Blob(chunks, { type: recorder?.mimeType || chunks[0]?.type })
+          if (!audio.size) return finish('No speech was captured. Try again or type your question.')
+          const response = await fetch('/api/assistant/voice', {
+            method: 'POST',
+            headers: speechLocale ? { 'X-Speech-Language': speechLocale.split('-')[0] } : undefined,
+            body: audio,
+            signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
+          })
+          if (response.status === 422) return finish('No speech was captured. Try again or type your question.')
+          if (response.status === 429) return finish('Too many voice requests. Wait a moment and try again.')
+          if (!response.ok) throw new Error('Transcription failed')
+          const { text: transcript } = await response.json()
+          if (request !== voiceRequest.current) return
+          if (typeof transcript !== 'string' || !transcript.trim()) return finish('No speech was captured. Try again or type your question.')
+          setText(transcript)
+          finish('Review or edit your question before submitting.')
+        } catch {
+          finish('Voice input couldn’t transcribe your question. Try again or type it.')
+        }
+      }
+      recorder.start()
+      timer = setTimeout(stop, 20_000)
+      setCapturing(true)
+      setVoiceStatus('Recording… Select Stop when you’re done.')
+    } catch (error) {
+      release()
+      const denied = error instanceof DOMException && error.name === 'NotAllowedError'
+      finish(denied ? 'Microphone access was denied. Allow it in your browser settings or type your question.'
+        : 'Voice input couldn’t start. You can type your question.')
+    }
+  }
+
   function switchMode(next: Mode) {
     if (mode === next) return
     stopReading()
@@ -293,12 +383,12 @@ export function Assistant() {
             <label htmlFor="assistant-speech-language">Speech language</label>
             <select id="assistant-speech-language" className="rounded-md border border-border bg-background px-2 py-1"
               value={speechLocale} disabled={busy || listening} onChange={event => setSpeechLocale(event.target.value)}>
-              <option value="">Browser default</option>
+              <option value="">{serverDictation ? 'Detect automatically' : 'Browser default'}</option>
               {dictationLanguages.map(([locale, label]) => <option key={locale} value={locale}>{label}</option>)}
             </select>
           </div>
         )}
-        {!local && <p className="mt-2 text-sm text-muted-foreground">Your browser may send microphone audio to its speech provider. Read aloud uses your browser’s voices.</p>}
+        {!local && <p className="mt-2 text-sm text-muted-foreground">{serverDictation ? 'Speak sends your recording to OpenAI for transcription on supported browsers. Otherwise your browser may use its own speech provider.' : 'Your browser may send microphone audio to its speech provider.'} Read aloud uses your browser’s voices.</p>}
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="submit" className={primaryButton} disabled={busy || listening || !text.trim()}>
             {busy ? 'Looking up your request…' : local ? 'Find masjids and times' : 'Find an answer'}
