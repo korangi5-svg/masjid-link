@@ -2,6 +2,24 @@ export const questionCategories = ['Faith', 'Prayer', 'Purification', 'Quran', '
 export type QuestionCategory = typeof questionCategories[number]
 export type KnowledgeAnswer = { id: string; question: string; answer: string; category: QuestionCategory; keywords: string[]; aliases: string[]; sources: { label: string; href: string }[] }
 export const knowledgeBase: KnowledgeAnswer[] = [
+  {
+    id: 'five-pillars',
+    question: 'What are the five pillars of Islam?',
+    answer: 'The five pillars of Islam are Shahadah (the testimony of faith), Salah (the five daily prayers), Zakat (obligatory giving), Sawm (fasting during Ramadan), and Hajj (pilgrimage to Makkah for those who are able).',
+    category: 'Faith',
+    keywords: ['five', '5', 'pillar', 'pillars', 'islam'],
+    aliases: ['what is five pillar of islam', 'what is the five pillar of islam', 'what are five pillars of islam', 'what are the 5 pillars of islam', 'what is 5 pillar of islam', 'list the five pillars of islam', 'five pillar of islam', '5 pillars of islam'],
+    sources: [{ label: 'Sahih al-Bukhari 8', href: 'https://sunnah.com/bukhari:8' }, { label: 'New Muslim Path', href: '/learning-path' }],
+  },
+  {
+    id: 'what-is-islam',
+    question: 'What is Islam?',
+    answer: 'Islam is a monotheistic faith centred on worshipping Allah alone and following the teachings of the Prophet Muhammad ﷺ. Its foundational practices include the testimony of faith, prayer, obligatory giving, fasting during Ramadan, and pilgrimage for those who are able.',
+    category: 'Faith',
+    keywords: ['islam', 'meaning', 'faith', 'belief'],
+    aliases: ['what is the islam', 'what does islam mean', 'explain islam'],
+    sources: [{ label: 'Quran 112', href: 'https://quran.com/112' }, { label: 'Sahih Muslim 8a', href: 'https://sunnah.com/muslim:8a' }],
+  },
   {id:'shahadah',question:'What does the Shahadah mean?',answer:'The Shahadah affirms Allah’s oneness and the messengership of Muhammad ﷺ. Begin by understanding both parts, and ask a trusted teacher for help with pronunciation and questions.',category:'Faith',keywords:['shahadah','testimony','faith','meaning'],aliases:['what is shahadah','what does shahadah mean','meaning of shahada','what does the declaration of faith mean','what is the declaration of faith in islam'],sources:[{label:'New Muslim Path · Shahadah',href:'/learning-path'},{label:'Quran 47:19',href:'https://quran.com/47/19'}]},
   {id:'prayers',question:'What are the five daily prayers?',answer:'Namaz, also called salah, is the prescribed ritual prayer in Islam. The five daily obligatory prayers are Fajr, Dhuhr, Asr, Maghrib, and Isha. Their times vary by location and season. Check a local masjid timetable for its actual congregational times.',category:'Prayer',keywords:['five','daily','prayer','names','fajr','dhuhr','asr','maghrib','isha'],aliases:['what are the five prayers','names of daily prayers','what is salah','what is salat','what is namaz','what does namaz mean','what does salah mean','what is islamic ritual prayer'],sources:[{label:'New Muslim Path · Salah',href:'/learning-path'},{label:'Sahih Muslim 16a',href:'https://sunnah.com/muslim:16a'}]},
   {id:'wudu',question:'What is wudu and how can I learn it?',answer:'Wudu is ritual purification with water before prayer. Quran 5:6 names the face, arms to the elbows, head, and feet to the ankles. Learn a complete demonstration with a trusted teacher; recognized traditions differ in details. For personal circumstances, ask a qualified teacher.',category:'Purification',keywords:['wudu','ablution','purification','wash','learn'],aliases:['what is wudu','how do i do wudu','how to perform ablution','how to make wudu'],sources:[{label:'New Muslim Path · Wudu',href:'/learning-path'},{label:'Quran 5:6',href:'https://quran.com/5/6'}]},
