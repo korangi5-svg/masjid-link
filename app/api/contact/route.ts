@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { contactInfo } from '@/lib/site'
 import { getSupabase } from '@/lib/supabase'
 import { validateEmail, validateRequired } from '@/lib/validation'
@@ -7,7 +7,47 @@ import { getContactPurpose } from '@/lib/contact-purposes'
 
 export const runtime = 'nodejs'
 const attempts = new Map<string, { count: number; until: number }>()
+const confirmationAttempts = new Map<string, number>()
 const failure = (error: string, status: number) => NextResponse.json({ ok: false, error }, { status })
+
+async function sendConfirmation(key: string, from: string, recipient: string, submissionId: string) {
+  const now = Date.now()
+  for (const [email, expiry] of confirmationAttempts) {
+    if (expiry <= now) confirmationAttempts.delete(email)
+  }
+
+  const address = recipient.toLowerCase()
+  if (confirmationAttempts.has(address) || confirmationAttempts.size >= 10000) return
+  confirmationAttempts.set(address, now + 600000)
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'Idempotency-Key': `contact-confirmation/${submissionId}`,
+      },
+      body: JSON.stringify({
+        from,
+        to: [recipient],
+        reply_to: contactInfo.email,
+        subject: 'We received your message | Connect to Masjid',
+        text: [
+          'Assalamu Alaikum,',
+          'Thank you for contacting Connect to Masjid. We’ve received your message and will review it. If a reply is needed, we’ll follow up at this email address, in shaa Allah.',
+          'Connect to Masjid Team',
+        ].join('\n\n'),
+      }),
+      signal: AbortSignal.timeout(10000),
+    })
+    if (response.ok) return
+    console.error('[contact] Confirmation email rejected:', response.status)
+  } catch {
+    console.error('[contact] Confirmation email request failed')
+  }
+  confirmationAttempts.delete(address)
+}
 
 export async function POST(request: Request) {
   const origin = request.headers.get('origin')
@@ -32,19 +72,20 @@ export async function POST(request: Request) {
   }
   const key = process.env.RESEND_API_KEY
   if (!key) return failure(`Email delivery is not configured yet. Please email ${contactInfo.email} directly.`, 503)
-  // Best-effort per-instance throttle; the recipient is fixed server-side.
+  // Best-effort per-instance throttle for contact submissions.
   const now = Date.now()
   for (const [id, value] of attempts) if (value.until <= now) attempts.delete(id)
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown'
   const prior = attempts.get(ip)
   if ((prior?.count || 0) >= 3 || attempts.size >= 10000) return failure('Too many messages. Please wait ten minutes before trying again.', 429)
   attempts.set(ip, { count: (prior?.count || 0) + 1, until: prior?.until || now + 600000 })
+  const from = process.env.CONTACT_FROM_EMAIL?.trim()
   try {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: process.env.CONTACT_FROM_EMAIL || 'Connect to Masjid <onboarding@resend.dev>',
+        from: from || 'Connect to Masjid <onboarding@resend.dev>',
         to: [contactInfo.email], reply_to: message.email,
         subject: `[Masjid Link · ${purpose.label}] ${message.subject}`,
         text: `Purpose: ${purpose.label}\nName: ${message.name}\nEmail: ${message.email}\n\n${message.message}`,
@@ -67,6 +108,9 @@ export async function POST(request: Request) {
         if (error) console.error('[contact] Email accepted, archive failed')
       }
     } catch { console.error('[contact] Email accepted, archive unavailable') }
+    if (from && !/@resend\.dev(?:>|$)/i.test(from)) {
+      after(() => sendConfirmation(key, from, message.email, result.id))
+    }
     return NextResponse.json({ ok: true })
   } catch {
     return failure(`We could not confirm email delivery. Please email ${contactInfo.email} directly.`, 502)
