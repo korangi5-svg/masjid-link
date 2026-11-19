@@ -76,6 +76,24 @@ appropriate greeting reply in the detected language in greetingReply, otherwise 
     }
 }
 
+export async function generateAnswer(question: string, language: Language): Promise<string> {
+  const value = await structured(
+    `Answer the question directly in the requested language using concise plain text suitable for
+reading aloud. Answer general knowledge and basic educational questions, including Islamic topics.
+If the answer depends on current or local information you cannot verify, say what needs checking.
+For personal religious rulings, explain relevant general principles and suggest consulting a
+qualified scholar. Give a useful next step when you cannot answer. Do not claim to have searched
+the site's published answers or verified a source. Keep the answer under 1500 characters.`,
+    { question, language },
+    { answer: { type: 'string' } },
+    800,
+  )
+  if (typeof value.answer !== 'string' || !value.answer.trim() || value.answer.length > 1500) {
+    throw new Error('Invalid generated assistant answer')
+  }
+  return value.answer.trim()
+}
+
 export async function localize(language: Language, text: string, message: string, details: string[], labels: string[]) {
   const value = await structured(
     `Render the provided assistant message, details, and link labels entirely in the requested
