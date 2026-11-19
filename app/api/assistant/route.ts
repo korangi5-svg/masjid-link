@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { curatedFallback, findCuratedAnswer } from '@/lib/assistant-curated'
 import { clarifyLanguage, isLanguage, scriptLanguage, unavailable } from '@/lib/assistant-language'
-import { interpret, localize, type AssistantContext } from '@/lib/services/assistant-ai'
+import { generateAnswer, interpret, localize, type AssistantContext } from '@/lib/services/assistant-ai'
 import { allowAssistantRequest } from '@/lib/services/assistant-limit'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { normalizeQuestion, routeQuestion } from '@/lib/questions'
@@ -43,7 +43,7 @@ function readPrayerTimeQuestion(question: string) {
   return { place, name }
 }
 
-async function answerQuestion(question: string) {
+async function answerQuestion(question: string, generate?: () => Promise<string>) {
   const prayerTime = readPrayerTimeQuestion(question)
   if (prayerTime) {
     if (!prayerTime.place || prayerTime.place.length > 100) {
@@ -72,6 +72,8 @@ async function answerQuestion(question: string) {
   if (related) {
     return reply(`Related published answer — ${related.question} ${related.answer}`, [...related.sources, reviewLink])
   }
+
+  if (generate) return reply(await generate())
 
   return reply('I couldn’t find a published answer that matches. Browse Questions & Answers or request human review.', [
     reviewLink, { label: 'Search Connect to Masjid', href: '/search' },
@@ -155,7 +157,9 @@ export async function POST(request: Request) {
       if (language !== 'en') throw error
     }
 
-    const result = mode === 'local' ? await localResults(query) : await answerQuestion(query)
+    const result = mode === 'local'
+      ? await localResults(query)
+      : await answerQuestion(query, () => generateAnswer(query, 'en'))
     const context = { text, query, mode, language }
     if (language === 'en') return NextResponse.json({ ...result, language, context }, { headers })
     const translated = await localize(language, text, result.message, result.details, result.links.map(link => link.label))
