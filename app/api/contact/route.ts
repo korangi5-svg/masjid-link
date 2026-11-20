@@ -10,7 +10,7 @@ const attempts = new Map<string, { count: number; until: number }>()
 const confirmationAttempts = new Map<string, number>()
 const failure = (error: string, status: number) => NextResponse.json({ ok: false, error }, { status })
 
-async function sendConfirmation(key: string, from: string, recipient: string, submissionId: string) {
+async function sendConfirmation(recipient: string, deliver: () => Promise<Response>) {
   const now = Date.now()
   for (const [email, expiry] of confirmationAttempts) {
     if (expiry <= now) confirmationAttempts.delete(email)
@@ -21,32 +21,54 @@ async function sendConfirmation(key: string, from: string, recipient: string, su
   confirmationAttempts.set(address, now + 600000)
 
   try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        'Idempotency-Key': `contact-confirmation/${submissionId}`,
-      },
-      body: JSON.stringify({
-        from,
-        to: [recipient],
-        reply_to: contactInfo.email,
-        subject: 'We received your message | Connect to Masjid',
-        text: [
-          'Assalamu Alaikum,',
-          'Thank you for contacting Connect to Masjid. We’ve received your message and will review it. If a reply is needed, we’ll follow up at this email address, in shaa Allah.',
-          'Connect to Masjid Team',
-        ].join('\n\n'),
-      }),
-      signal: AbortSignal.timeout(10000),
-    })
+    const response = await deliver()
     if (response.ok) return
     console.error('[contact] Confirmation email rejected:', response.status)
   } catch {
     console.error('[contact] Confirmation email request failed')
   }
   confirmationAttempts.delete(address)
+}
+
+function resendConfirmation(key: string, from: string, recipient: string, submissionId: string) {
+  return fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      'Idempotency-Key': `contact-confirmation/${submissionId}`,
+    },
+    body: JSON.stringify({
+      from,
+      to: [recipient],
+      reply_to: contactInfo.email,
+      subject: 'We received your message | Connect to Masjid',
+      text: [
+        'Assalamu Alaikum,',
+        'Thank you for contacting Connect to Masjid. We’ve received your message and will review it. If a reply is needed, we’ll follow up at this email address, in shaa Allah.',
+        'Connect to Masjid Team',
+      ].join('\n\n'),
+    }),
+    signal: AbortSignal.timeout(10000),
+  })
+}
+
+function emailJsConfirmation(recipient: string) {
+  const { EMAILJS_SERVICE_ID, EMAILJS_CONTACT_CONFIRMATION_TEMPLATE_ID, EMAILJS_PUBLIC_KEY, EMAILJS_PRIVATE_KEY } = process.env
+  if (!EMAILJS_SERVICE_ID || !EMAILJS_CONTACT_CONFIRMATION_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY || !EMAILJS_PRIVATE_KEY) return
+
+  return () => fetch('https://api.emailjs.com/api/v1.0/email/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      service_id: EMAILJS_SERVICE_ID,
+      template_id: EMAILJS_CONTACT_CONFIRMATION_TEMPLATE_ID,
+      user_id: EMAILJS_PUBLIC_KEY,
+      accessToken: EMAILJS_PRIVATE_KEY,
+      template_params: { recipient_email: recipient },
+    }),
+    signal: AbortSignal.timeout(10000),
+  })
 }
 
 export async function POST(request: Request) {
@@ -108,8 +130,11 @@ export async function POST(request: Request) {
         if (error) console.error('[contact] Email accepted, archive failed')
       }
     } catch { console.error('[contact] Email accepted, archive unavailable') }
-    if (from && !/@resend\.dev(?:>|$)/i.test(from)) {
-      after(() => sendConfirmation(key, from, message.email, result.id))
+    const deliverConfirmation = emailJsConfirmation(message.email)
+    if (deliverConfirmation) {
+      after(() => sendConfirmation(message.email, deliverConfirmation))
+    } else if (from && !/@resend\.dev(?:>|$)/i.test(from)) {
+      after(() => sendConfirmation(message.email, () => resendConfirmation(key, from, message.email, result.id)))
     }
     return NextResponse.json({ ok: true })
   } catch {
