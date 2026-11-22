@@ -368,7 +368,7 @@ export function Assistant({ serverDictation }: { serverDictation: boolean }) {
           {local ? 'City or postal code' : 'Question about Islam or Connect to Masjid'}
         </label>
         <div className="flex items-center gap-2">
-          <input id="assistant-input" className={cn(inputClass, local && "border-4 border-navy focus:border-navy")} value={text} readOnly={listening} dir="auto" onChange={event => setText(event.target.value)}
+          <input id="assistant-input" className={cn(inputClass, "border-4 border-navy focus:border-navy")} value={text} readOnly={listening} dir="auto" onChange={event => setText(event.target.value)}
             placeholder={local ? 'Toronto, Ontario' : 'What is wudu?'} maxLength={local ? 100 : 500} required />
           {!local && (
             <button type="button" className={`${secondaryButton} shrink-0 px-3 py-2`} onClick={toggleVoice}
