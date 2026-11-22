@@ -20,7 +20,7 @@ export default function HomePage() {
       <YourArea />
       <section className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6 lg:px-8">
         <div>
-          <h2 className="text-2xl font-bold text-navy">Connect to Masjid Assistant</h2>
+          <h2 className="inline-block rounded-t-lg bg-navy px-4 py-2 text-2xl font-bold text-white">Connect to Masjid Assistant</h2>
           <p className="mt-1 text-muted-foreground">Find prayer times, get around the site, or look up an Islamic question.</p>
         </div>
         {/* Load a new document so the assistant’s microphone policy takes effect. */}
