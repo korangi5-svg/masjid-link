@@ -18,7 +18,7 @@ export function EventCard({ event }: { event: CommunityEvent }) {
   const day = formatEventDate(event.date, { weekday: undefined, month: undefined, year: undefined })
 
   return (
-    <article className="relative flex h-full flex-col rounded-2xl border border-border bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+    <article className="relative flex h-full flex-col rounded-2xl border-4 border-navy bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between gap-4">
         <time
           dateTime={event.date}
@@ -27,7 +27,7 @@ export function EventCard({ event }: { event: CommunityEvent }) {
           <span className="text-xs font-semibold uppercase tracking-wider text-mint">{month}</span>
           <span className="text-2xl font-extrabold leading-none">{day}</span>
         </time>
-        <span className={cn('rounded-full px-3 py-1 text-xs font-semibold', categoryStyles[event.category])}>
+        <span className={cn('rounded-full border-4 border-navy px-3 py-1 text-xs font-semibold', categoryStyles[event.category])}>
           {event.category}
         </span>
       </div>
