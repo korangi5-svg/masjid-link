@@ -87,7 +87,7 @@ export function LocationSearch() {
         onSubmit={handleSubmit}
         noValidate
         className={cn(
-          'flex items-center gap-2 rounded-full bg-white p-1.5 pl-5 shadow-xl shadow-navy/20 ring-2 transition-shadow focus-within:ring-mint',
+          'flex items-center gap-2 rounded-full border-[5px] border-navy bg-white p-1.5 pl-5 shadow-xl shadow-navy/20 ring-2 transition-shadow focus-within:ring-mint',
           hasError ? 'ring-gold' : 'ring-transparent',
         )}
       >
@@ -162,7 +162,7 @@ function SearchResults({
 
   if (!masjids.length) {
     return (
-      <div className="rounded-xl bg-white/95 p-4 text-sm text-navy shadow-lg">
+      <div className="rounded-xl border-[5px] border-navy bg-white/95 p-4 text-sm text-navy shadow-lg">
         <p>
           No masjids found near <strong>{query}</strong> yet. Try a wider area or a nearby city.
         </p>
@@ -174,7 +174,7 @@ function SearchResults({
   }
 
   return (
-    <div className="rounded-xl bg-white/95 p-2 shadow-lg">
+    <div className="rounded-xl border-[5px] border-navy bg-white/95 p-2 shadow-lg">
       <p className="px-3 pt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {masjids.length} {masjids.length === 1 ? 'masjid' : 'masjids'} near {query}
       </p>
