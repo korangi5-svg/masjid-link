@@ -77,7 +77,7 @@ export default function LocalServicesPage() {
               </label>
               <input
                 id="service-location"
-                className={inputClass}
+                className={`${inputClass} inset-ring-3 inset-ring-navy`}
                 value={location}
                 onChange={(event) => setLocation(event.target.value)}
                 placeholder="For example, Toronto Pearson Airport, Canada"
