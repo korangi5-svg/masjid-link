@@ -23,7 +23,7 @@ export function ResourceLibrary({ categories }: { categories: ResourceCategory[]
 
   return (
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mb-8 rounded-2xl border-4 border-navy bg-surface p-6"><h2 className="text-xl font-bold text-navy">Find your next lecture, article, course, or podcast</h2><p className="mt-2 text-sm text-muted-foreground">Search our learning library and discover recommendations shaped by your interests.</p><Link href="/learn" className={cn(secondaryButton, 'mt-4')}>Explore the learning library</Link></div>
+        <div className="mb-8 rounded-2xl border-4 border-navy bg-surface p-6"><h2 className="text-xl font-bold text-navy">Find your next lecture, article, course, or podcast</h2><p className="mt-2 text-sm text-muted-foreground">Search our learning library and discover recommendations shaped by your interests.</p><Link href="/learn" className={cn(secondaryButton, 'mt-4 inset-ring-3 inset-ring-navy')}>Explore the learning library</Link></div>
         <div role="search" className="mb-6">
           <label htmlFor="resource-search" className="mb-2 block font-semibold text-navy">Search Islamic resources</label>
           <input id="resource-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} className={cn(inputClass, 'border-4 border-navy focus:border-navy')} />
