@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function AboutMePage() {
   return (
     <section aria-labelledby="about-creator" className="mx-auto grid max-w-7xl gap-6 px-4 py-14 sm:px-6 lg:px-8">
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8">
+      <div className="rounded-2xl border-4 border-navy bg-white p-6 shadow-sm sm:p-8">
         <h1 id="about-creator" className="text-3xl font-bold text-navy">About Me</h1>
         <p className="mt-3 max-w-3xl leading-relaxed text-muted-foreground">
           I’m <strong className="text-navy">Mohammad Arif Ul Huda Khan</strong>, the creator of this website. I design and build websites, automate workflows across websites and applications, and develop custom AI agents for independent professionals and businesses. I work with lawyers, consultants, real estate professionals, clinics, and other service-based businesses.
@@ -38,7 +38,7 @@ export default function AboutMePage() {
           <a className="font-semibold text-teal underline" href="tel:+14169395525">+1 416-939-5525</a>
         </address>
       </div>
-      <div aria-labelledby="about-sponsor" className="rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8">
+      <div aria-labelledby="about-sponsor" className="rounded-2xl border-4 border-navy bg-white p-6 shadow-sm sm:p-8">
         <div className="flex flex-wrap items-start gap-4">
           <a href="https://www.nextwis.ca/" aria-label="Visit NextWis Digital Skills Education">
             <Image
