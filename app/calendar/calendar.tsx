@@ -9,6 +9,10 @@ import { DAILY_PRAYERS, formatCountdown, getNextPrayer } from '@/lib/prayer'
 import type { CommunityEvent, PrayerTimes } from '@/lib/types'
 import { inputClass, secondaryButton } from '@/lib/site'
 
+const calendarControlBorder = 'border-4! border-neutral-600!'
+const calendarInput = `${inputClass} ${calendarControlBorder}`
+const calendarButton = `${secondaryButton} ${calendarControlBorder}`
+
 const weekdays = [
   { label: 'Sun', colors: 'border-rose-400 bg-rose-200 text-rose-950' },
   { label: 'Mon', colors: 'border-sky-400 bg-sky-200 text-sky-950' },
@@ -325,15 +329,15 @@ export function Calendar({ events, masjidLocations }: {
       <section className="rounded-3xl border-4 border-navy bg-white p-3 shadow-lg shadow-slate-200/60 sm:p-7 dark:bg-slate-900" aria-labelledby="calendar-month">
         <form onSubmit={selectCity} className="flex flex-wrap items-end gap-3">
           <label className="min-w-0 flex-1 basis-48 font-semibold">City
-            <input className={inputClass} value={city} onChange={event => setCity(event.target.value)}
+            <input className={calendarInput} value={city} onChange={event => setCity(event.target.value)}
               placeholder="Toronto, Canada" required maxLength={120} disabled={searching} />
           </label>
-          <button className={secondaryButton} type="submit" disabled={searching}>{searching ? 'Finding city…' : 'Set city'}</button>
+          <button className={calendarButton} type="submit" disabled={searching}>{searching ? 'Finding city…' : 'Set city'}</button>
         </form>
         {cityError && <p role="alert" className="mt-2 text-sm text-destructive">{cityError}</p>}
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <label className="font-semibold">Location time zone
-            <select className={inputClass} value={zone} disabled={searching} onChange={event => {
+            <select className={calendarInput} value={zone} disabled={searching} onChange={event => {
               setZone(event.target.value); setPlace(null); setCityError(''); setAnchor(null); setSelectedDay(null)
             }}>
               <option value="">Device time zone</option>
@@ -342,44 +346,44 @@ export function Calendar({ events, masjidLocations }: {
             </select>
           </label>
           <label className="font-semibold">Hijri date adjustment
-            <select className={inputClass} value={offset} onChange={event => { setOffset(Number(event.target.value)); setAnchor(null); setSelectedDay(null) }}>
+            <select className={calendarInput} value={offset} onChange={event => { setOffset(Number(event.target.value)); setAnchor(null); setSelectedDay(null) }}>
               <option value={0}>Umm al-Qura date</option><option value={-1}>One day earlier</option><option value={1}>One day later</option>
             </select>
           </label>
         </div>
         <div className="mt-6 flex flex-wrap gap-2" aria-label="Calendar view">
-          <button type="button" className={`${secondaryButton} aria-pressed:border-indigo-800 aria-pressed:bg-indigo-800 aria-pressed:text-white`} aria-pressed={isHijri} onClick={() => setIsHijri(true)}>Hijri month</button>
-          <button type="button" className={`${secondaryButton} aria-pressed:border-indigo-800 aria-pressed:bg-indigo-800 aria-pressed:text-white`} aria-pressed={!isHijri} onClick={() => setIsHijri(false)}>Gregorian month</button>
-          <button type="button" className={secondaryButton + ' ml-auto'} aria-pressed={darkMode} aria-label={'Switch to ' + (darkMode ? 'light mode' : 'dark mode')} onClick={() => setDarkMode(value => !value)}>{darkMode ? 'Light mode' : 'Dark mode'}</button>
+          <button type="button" className={`${calendarButton} aria-pressed:bg-indigo-800 aria-pressed:text-white`} aria-pressed={isHijri} onClick={() => setIsHijri(true)}>Hijri month</button>
+          <button type="button" className={`${calendarButton} aria-pressed:bg-indigo-800 aria-pressed:text-white`} aria-pressed={!isHijri} onClick={() => setIsHijri(false)}>Gregorian month</button>
+          <button type="button" className={calendarButton + ' ml-auto'} aria-pressed={darkMode} aria-label={'Switch to ' + (darkMode ? 'light mode' : 'dark mode')} onClick={() => setDarkMode(value => !value)}>{darkMode ? 'Light mode' : 'Dark mode'}</button>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <h2 id="calendar-month" className="text-2xl font-bold text-navy" aria-live="polite">{title}</h2>
           {!isHijri && bounds && <div className="flex gap-2">
             <label className="sr-only" htmlFor="calendar-month-select">Calendar month</label>
-            <select id="calendar-month-select" aria-label="Calendar month" className={inputClass + ' w-36'} value={calendarMonth} onChange={event => { setAnchor(Date.UTC(calendarYear, Number(event.target.value), 1)); setSelectedDay(null) }}>
+            <select id="calendar-month-select" aria-label="Calendar month" className={calendarInput + ' w-36'} value={calendarMonth} onChange={event => { setAnchor(Date.UTC(calendarYear, Number(event.target.value), 1)); setSelectedDay(null) }}>
               {gregorianMonths.map((month, index) => <option key={month} value={index}>{month}</option>)}
             </select>
             <label className="sr-only" htmlFor="calendar-year-select">Calendar year</label>
-            <select id="calendar-year-select" aria-label="Calendar year" className={inputClass + ' w-24'} value={calendarYear} onChange={event => { setAnchor(Date.UTC(Number(event.target.value), calendarMonth, 1)); setSelectedDay(null) }}>
+            <select id="calendar-year-select" aria-label="Calendar year" className={calendarInput + ' w-24'} value={calendarYear} onChange={event => { setAnchor(Date.UTC(Number(event.target.value), calendarMonth, 1)); setSelectedDay(null) }}>
               {yearOptions.map(year => <option key={year} value={year}>{year}</option>)}
             </select>
           </div>}
           {bounds && <div className="flex flex-wrap gap-2">
-            <button className={secondaryButton} onClick={() => { setAnchor(bounds.start - DAY); setSelectedDay(null) }}>Previous</button>
-            <button className={secondaryButton} onClick={() => { setAnchor(null); setSelectedDay(null) }}>Today</button>
-            <button className={secondaryButton} onClick={() => { setAnchor(bounds.end); setSelectedDay(null) }}>Next</button>
+            <button className={calendarButton} onClick={() => { setAnchor(bounds.start - DAY); setSelectedDay(null) }}>Previous</button>
+            <button className={calendarButton} onClick={() => { setAnchor(null); setSelectedDay(null) }}>Today</button>
+            <button className={calendarButton} onClick={() => { setAnchor(bounds.end); setSelectedDay(null) }}>Next</button>
           </div>}
         </div>
         <ul aria-label="Calendar legend" className="mt-4 flex flex-wrap gap-2">
           {Object.values(tileColors).map(({ label, tile, badge }) => (
-            <li key={label} className={`rounded-full border px-2.5 py-1 text-xs font-bold ${tile} ${badge}`}>{label}</li>
+            <li key={label} className={`rounded-full border-4 border-neutral-600! px-2.5 py-1 text-xs font-bold ${tile} ${badge}`}>{label}</li>
           ))}
         </ul>
         <fieldset className="mt-3">
           <legend className="mb-2 text-sm font-semibold text-navy">Show on calendar</legend>
           <div className="flex flex-wrap gap-2">
             {filterOptions.map(({ key, label }) => (
-              <label key={key} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-navy dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+              <label key={key} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border-4 border-neutral-600 bg-white px-3 py-2 text-sm font-semibold text-navy dark:bg-slate-900 dark:text-slate-100">
                 <input type="checkbox" className="size-4 accent-emerald-600" checked={filters[key]} onChange={() => setFilters(current => ({ ...current, [key]: !current[key] }))} />
                 {label}
               </label>
