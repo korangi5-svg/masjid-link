@@ -34,7 +34,7 @@ export default function IslamicWebsitesPage() {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className={cn('block h-full rounded-2xl border border-border bg-white p-5 transition-colors hover:border-teal', focusRing)}
+              className={cn('block h-full rounded-2xl border-4 border-navy bg-white p-5 transition-colors hover:border-teal', focusRing)}
             >
               <h2 className="flex items-center gap-2 text-lg font-semibold text-navy">
                 {name}
