@@ -13,56 +13,9 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://masjid-link.vercel.app/' },
 }
 
-const homepageBorderStyles = `
-  body:has([data-homepage]) {
-    & header.sticky, & main .border-b {
-      border-bottom: 5px solid var(--color-navy);
-    }
-
-    & header .border, & main .border {
-      border: 5px solid var(--color-navy);
-    }
-
-    & main .border-t, & footer .border-t {
-      border-top: 5px solid var(--color-navy);
-    }
-
-    & main ul.divide-y > :not(:last-child) {
-      border-bottom: 5px solid var(--color-navy);
-    }
-
-    @media (width >= 40rem) {
-      & main ul[class~="sm:divide-y-0"] > :not(:last-child) {
-        border-bottom-width: 0;
-      }
-
-      & main ul[class~="sm:divide-x"] > :not(:last-child) {
-        border-inline-end: 5px solid var(--color-navy);
-      }
-    }
-
-    @media (40rem <= width < 64rem) {
-      & main li[class~="sm:max-lg:odd:border-r"]:nth-child(odd) {
-        border-right: 5px solid var(--color-navy);
-      }
-
-      & main li[class~="sm:max-lg:[&:nth-child(n+3)]:border-t"]:nth-child(n+3) {
-        border-top: 5px solid var(--color-navy);
-      }
-    }
-
-    @media (width >= 64rem) {
-      & main ul[class~="lg:divide-x"] > :not(:last-child) {
-        border-inline-end: 5px solid var(--color-navy);
-      }
-    }
-  }
-`
-
 export default function HomePage() {
   return (
     <>
-      <style data-homepage>{homepageBorderStyles}</style>
       <Hero />
       <YourArea />
       <section className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6 lg:px-8">
