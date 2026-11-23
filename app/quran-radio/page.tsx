@@ -37,9 +37,9 @@ export default function QuranRadioPage() {
     <>
       <PageHeader eyebrow="Listen" title="Quran Radio" description="Listen to live Quran recitation." />
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-        <section aria-labelledby="station-name" className="rounded-2xl border border-[#E2BCEB] bg-[#FAF1FC] p-5 sm:p-8">
+        <section aria-labelledby="station-name" className="rounded-2xl border-4 border-navy bg-[#FAF1FC] p-5 sm:p-8">
           <h2 id="station-name" className="text-xl font-semibold text-[#682575]">Alzain Mohammad Ahmad</h2>
-          <audio aria-label="Live Quran recitation by Alzain Mohammad Ahmad" className="mt-4 w-full" controls preload="none" src={stream}>
+          <audio aria-label="Live Quran recitation by Alzain Mohammad Ahmad" className="mt-4 block h-16 w-full rounded-full border-4 border-navy" controls preload="none" src={stream}>
             Your browser does not support the audio player.
           </audio>
           <p className="mt-4 text-sm text-[#682575]">
@@ -49,11 +49,11 @@ export default function QuranRadioPage() {
           </p>
         </section>
 
-        <section aria-labelledby="more-stations" className="mt-8">
+        <section aria-labelledby="more-stations" className="mt-8 rounded-2xl border-4 border-navy p-5 sm:p-8">
           <h2 id="more-stations" className="text-xl font-semibold text-[#682575]">More Quran radio stations</h2>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2">
             {radioLinks.map(({ name, href, description }) => (
-              <li key={href} className="rounded-2xl border border-[#E2BCEB] bg-[#FAF1FC]">
+              <li key={href} className="rounded-2xl border-4 border-navy bg-[#FAF1FC]">
                 <a className={`block h-full rounded-2xl p-4 text-[#682575] ${focusRing}`} href={href}>
                   <span className="font-semibold underline underline-offset-4">{name}</span>
                   <span className="mt-1 block text-sm">{description}</span>
