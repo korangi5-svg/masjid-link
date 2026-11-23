@@ -103,7 +103,7 @@ export default function LocalServicesPage() {
                 <li key={service.name} className="flex flex-col items-start gap-3 rounded-2xl p-5 inset-ring-3 inset-ring-navy">
                   <h3 className="text-lg font-semibold text-navy">{service.name}</h3>
                   <p className="grow text-sm text-muted-foreground">{service.description}</p>
-                  <a href={mapsSearch(service.query, area)} className={secondaryButton}>
+                  <a href={mapsSearch(service.query, area)} className={`${secondaryButton} inset-ring-3 inset-ring-navy`}>
                     Find {service.name.toLowerCase()} on Google Maps
                   </a>
                 </li>
