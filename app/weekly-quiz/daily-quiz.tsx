@@ -85,7 +85,7 @@ export function DailyQuiz({ date }: { date: string }) {
   if (!question) {
     const score = questions.filter((item, index) => item.answer === answers[index]).length
     return (
-      <div className="space-y-4 rounded-xl border bg-white p-5">
+      <div className="space-y-4 rounded-xl border-4 border-navy bg-white p-5">
         <h3 ref={heading} tabIndex={-1} className="text-xl font-bold text-navy">You scored {score} out of {questions.length}</h3>
         <ol className="space-y-3">
           {questions.map((item, index) => (
@@ -105,7 +105,7 @@ export function DailyQuiz({ date }: { date: string }) {
   }
 
   return (
-    <form onSubmit={advance} className="space-y-4 rounded-xl border bg-white p-5">
+    <form onSubmit={advance} className="space-y-4 rounded-xl border-4 border-navy bg-white p-5">
       <div>
         <p className="text-sm font-medium text-muted-foreground">Question {step + 1} of {questions.length} · {question.topic}</p>
         <progress aria-label="Questions answered" className="w-full accent-navy" value={answers.length} max={questions.length} />
@@ -113,7 +113,7 @@ export function DailyQuiz({ date }: { date: string }) {
       <h3 ref={heading} tabIndex={-1} id="daily-quiz-question" className="text-lg font-semibold text-navy">{question.prompt}</h3>
       <fieldset aria-labelledby="daily-quiz-question" disabled={checked} className="space-y-2">
         {question.options.map((option, choice) => (
-          <label key={option} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 has-[:checked]:bg-teal/10">
+          <label key={option} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border-4 border-navy px-3 py-2 has-[:checked]:bg-teal/10">
             <input type="radio" className="shrink-0 accent-navy" name="daily-answer" checked={selected === choice} onChange={() => setSelected(choice)} />
             <span>{option}</span>
           </label>

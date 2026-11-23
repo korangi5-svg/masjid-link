@@ -25,7 +25,7 @@ function QuizAttempt({ date, questions, retry }: { date: string; questions: Ques
       </h2>
       <ol className="my-6 space-y-4">
         {review.map((item, index) => (
-          <li key={questions[index].prompt} className="rounded-xl border bg-white p-5">
+          <li key={questions[index].prompt} className="rounded-xl border-4 border-navy bg-white p-5">
             <h3 className="font-semibold text-navy">{index + 1}. {questions[index].prompt}</h3>
             <p className="mt-2 text-sm">{item.selected === item.correct ? 'Correct' : 'Incorrect'} · Your answer: {item.selected}</p>
             {item.selected !== item.correct && <p className="text-sm">Correct answer: {item.correct}</p>}
@@ -41,11 +41,11 @@ function QuizAttempt({ date, questions, retry }: { date: string; questions: Ques
   return (
     <form action={submit} className="space-y-6">
       {questions.map(({ prompt, options }, index) => (
-        <fieldset key={prompt} className="min-w-0 rounded-xl border bg-white p-5">
+        <fieldset key={prompt} className="min-w-0 rounded-xl border-4 border-navy bg-white p-5">
           <legend className="px-2 font-semibold text-navy">{index + 1}. {prompt}</legend>
           <div className="space-y-2">
             {options.map((option, choice) => (
-              <label key={option} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 hover:bg-teal/5">
+              <label key={option} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border-4 border-navy px-3 py-2 hover:bg-teal/5">
                 <input className="shrink-0 accent-navy" type="radio" name={`question-${index}`} value={choice} required />
                 <span>{option}</span>
               </label>
