@@ -371,7 +371,7 @@ export function Assistant({ serverDictation }: { serverDictation: boolean }) {
           <input id="assistant-input" className={cn(inputClass, "border-4 border-navy focus:border-navy")} value={text} readOnly={listening} dir="auto" onChange={event => setText(event.target.value)}
             placeholder={local ? 'Toronto, Ontario' : 'What is wudu?'} maxLength={local ? 100 : 500} required />
           {!local && (
-            <button type="button" className={`${secondaryButton} shrink-0 px-3 py-2`} onClick={toggleVoice}
+            <button type="button" className={cn(primaryButton, "shrink-0 px-4 font-bold")} onClick={toggleVoice}
               disabled={busy || (listening && !capturing)} aria-label={capturing ? 'Stop voice input' : 'Speak your question'}>
               {capturing ? <Square className="size-4" aria-hidden="true" /> : <Mic className="size-4" aria-hidden="true" />}
               {capturing ? 'Stop' : 'Speak'}
@@ -394,7 +394,7 @@ export function Assistant({ serverDictation }: { serverDictation: boolean }) {
           <button type="submit" className={primaryButton} disabled={busy || listening || !text.trim()}>
             {busy ? 'Looking up your request…' : local ? 'Find masjids and times' : 'Find an answer'}
           </button>
-          <button type="button" className={`${secondaryButton} px-3 py-2`}
+          <button type="button" className={cn(primaryButton, "px-4 font-bold disabled:opacity-80")}
             onClick={() => { if (result) void toggleReading(result) }} disabled={!result || busy || listening}
             aria-describedby={!result ? 'assistant-read-aloud-hint' : undefined}>
             {reading ? <Square className="size-4" aria-hidden="true" /> : <Volume2 className="size-4" aria-hidden="true" />}
