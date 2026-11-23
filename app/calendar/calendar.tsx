@@ -490,7 +490,7 @@ export function Calendar({ events, masjidLocations }: {
 
       <section aria-labelledby="calendar-prayers" className="rounded-2xl border-4 border-navy bg-sky-50 p-5 sm:p-7 dark:bg-sky-950/40">
         <h2 id="calendar-prayers" className="text-2xl font-bold text-navy">Today’s prayer times</h2>
-        {times ? <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">{DAILY_PRAYERS.map(prayer => <div key={prayer.key} className={`rounded-xl border p-3 text-center ${nextPrayer?.key === prayer.key ? 'border-indigo-900 bg-indigo-800 text-white' : 'border-sky-300 bg-white text-navy'}`}>
+        {times ? <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">{DAILY_PRAYERS.map(prayer => <div key={prayer.key} className={`rounded-xl border-4 border-neutral-600 p-3 text-center ${nextPrayer?.key === prayer.key ? 'bg-indigo-800 text-white' : 'bg-white text-navy'}`}>
           <dt className="text-sm font-semibold">{prayer.label}</dt><dd className="mt-1 font-bold tabular-nums">{times[prayer.key]}</dd>
         </div>)}</dl> : <p className="mt-2 text-sm text-muted-foreground">{!place ? 'Set a city to see prayer times.' : prayers?.key === prayerKey ? 'Prayer times are temporarily unavailable.' : 'Loading prayer times…'}</p>}
         <p className="mt-3 text-xs text-muted-foreground">Calculated for the selected city. Check your masjid for congregation times.</p>
