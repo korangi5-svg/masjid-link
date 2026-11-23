@@ -100,7 +100,7 @@ export default function LocalServicesPage() {
             <h2 className="mb-4 text-2xl font-bold text-navy">{group.title}</h2>
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {group.services.map((service) => (
-                <li key={service.name} className="flex flex-col items-start gap-3 rounded-2xl border-4 border-navy p-5">
+                <li key={service.name} className="flex flex-col items-start gap-3 rounded-2xl p-5 inset-ring-3 inset-ring-navy">
                   <h3 className="text-lg font-semibold text-navy">{service.name}</h3>
                   <p className="grow text-sm text-muted-foreground">{service.description}</p>
                   <a href={mapsSearch(service.query, area)} className={secondaryButton}>
