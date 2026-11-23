@@ -26,7 +26,7 @@ export function ResourceLibrary({ categories }: { categories: ResourceCategory[]
         <div className="mb-8 rounded-2xl border-4 border-navy bg-surface p-6"><h2 className="text-xl font-bold text-navy">Find your next lecture, article, course, or podcast</h2><p className="mt-2 text-sm text-muted-foreground">Search our learning library and discover recommendations shaped by your interests.</p><Link href="/learn" className={cn(secondaryButton, 'mt-4')}>Explore the learning library</Link></div>
         <div role="search" className="mb-6">
           <label htmlFor="resource-search" className="mb-2 block font-semibold text-navy">Search Islamic resources</label>
-          <input id="resource-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} className={inputClass} />
+          <input id="resource-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} className={cn(inputClass, 'border-4 border-navy focus:border-navy')} />
           <p role="status" className="mt-2 text-sm text-muted-foreground">{results.length} resources found.</p>
         </div>
         <ul className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
