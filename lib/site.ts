@@ -11,7 +11,8 @@ export const navLinks = [
   { href: '/daily-learning', label: 'Daily Learning' },
   { href: '/weekly-quiz', label: 'Weekly Islamic Quiz' },
   { href: '/calendar', label: 'Calendar' },
-  { href: '/about', label: 'About' },
+  { href: '/about', label: 'Aboute Connect to Masjid' },
+  { href: '/about-me', label: 'About Me' },
   { href: '/contact', label: 'Contact' },
 ].filter((link) => eventsEnabled || link.href !== '/events')
 
@@ -27,6 +28,7 @@ const navButtonColors: Record<string, string> = {
   '/weekly-quiz': 'bg-[#FFF4CD] text-[#725514] border-[#EBD58C]',
   '/calendar': 'bg-[#E5ECFF] text-[#314B93] border-[#C6D3F8]',
   '/about': 'bg-[#E8F3D9] text-[#416022] border-[#CBDFB0]',
+  '/about-me': 'bg-[#E8F3D9] text-[#416022] border-[#CBDFB0]',
   '/contact': 'bg-[#DFF4F8] text-[#17586B] border-[#B5E1EA]',
   '/search': 'bg-[#E1F1FF] text-[#174B78] border-[#B9DAF5]',
   '/notifications': 'bg-[#EFE7FF] text-[#563592] border-[#D9C8FA]',
@@ -41,7 +43,7 @@ export const navButton =
   'flex min-h-11 items-center justify-center rounded-[10px] border px-3 py-2 text-center text-sm font-semibold leading-tight transition-colors hover:brightness-95'
 
 export function isActivePath(pathname: string, href: string) {
-  return href === '/' ? pathname === '/' : pathname.startsWith(href)
+  return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`)
 }
 
 export const contactInfo = {
