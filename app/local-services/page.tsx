@@ -84,8 +84,8 @@ export default function LocalServicesPage() {
                 maxLength={150}
               />
             </div>
-            <button type="submit" className={primaryButton} disabled={!location.trim()}>Set location</button>
-            <button type="button" className={secondaryButton} onClick={searchNearby}>Search near me</button>
+            <button type="submit" className={`${primaryButton} inset-ring-3 inset-ring-navy-deep`} disabled={!location.trim()}>Set location</button>
+            <button type="button" className={`${secondaryButton} inset-ring-3 inset-ring-navy`} onClick={searchNearby}>Search near me</button>
           </form>
           <p role="status" className="text-sm text-muted-foreground">
             {area ? `Searching near ${area}.` : 'Google Maps will look for services near your current location when available.'}
