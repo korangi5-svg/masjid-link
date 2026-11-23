@@ -30,13 +30,13 @@ const navButtonColors: Record<string, string> = {
   '/about': 'bg-[#E8F3D9] text-[#416022]',
   '/about-me': 'bg-[#E8F3D9] text-[#416022]',
   '/contact': 'bg-[#DFF4F8] text-[#17586B]',
-  '/search': 'bg-[#E1F1FF] text-[#174B78] border-[#B9DAF5]',
+  '/search': 'bg-[#E1F1FF] text-[#174B78]',
   '/notifications': 'bg-[#EFE7FF] text-[#563592] border-[#D9C8FA]',
 }
 
 export function navButtonColor(href: string, active: boolean) {
   const colors = active ? 'border-[#087354] bg-[#087354] text-white' : navButtonColors[href]
-  if (href === '/search' || href === '/notifications') return colors
+  if (href === '/notifications') return colors
 
   const tabStyle = `${colors ?? ''} border-[5px] border-navy`
   return href === '/weekly-quiz' ? `${tabStyle} font-bold!` : tabStyle
