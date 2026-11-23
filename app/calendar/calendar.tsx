@@ -417,18 +417,18 @@ export function Calendar({ events, masjidLocations }: {
             <span className="font-semibold text-navy">{'href' in item && typeof item.href === 'string' ? <Link href={item.href} className="underline">{item.name}</Link> : item.name}</span>
             <span className="text-muted-foreground"> · {item.type}{item.detail ? ` · ${item.detail}` : ''}</span>
           </li>)}</ul> : <p className="mt-1 text-sm text-muted-foreground">No events or holidays listed for this date.</p>}
-          <div className="mt-4 border-t border-indigo-200 pt-4">
+          <div className="mt-4 border-t-4 border-neutral-600 pt-4">
             <div className="flex items-center justify-between gap-2"><label htmlFor={`calendar-note-${dateKey(activeDay)}`} className="font-semibold text-navy">Personal notes &amp; reminders</label><span className="text-xs text-muted-foreground">{noteDraft.length}/250</span></div>
             <textarea
               id={`calendar-note-${dateKey(activeDay)}`}
-              className={`${inputClass} mt-2 min-h-24 resize-y`}
+              className={`${calendarInput} mt-2 min-h-24 resize-y`}
               value={noteDraft}
               onChange={event => setNoteDraft(event.target.value)}
               maxLength={250}
               placeholder="Add a personal note or reminder for this day…"
             />
             <div className="mt-2 flex flex-wrap gap-2">
-              <button type="button" className={secondaryButton} onClick={() => {
+              <button type="button" className={calendarButton} onClick={() => {
                 const key = dateKey(activeDay)
                 const value = noteDraft.trim()
                 setNotes(current => {
@@ -438,7 +438,7 @@ export function Calendar({ events, masjidLocations }: {
                   return updated
                 })
               }}>Save note</button>
-              {notes[dateKey(activeDay)] && <button type="button" className={secondaryButton} onClick={() => {
+              {notes[dateKey(activeDay)] && <button type="button" className={calendarButton} onClick={() => {
                 const key = dateKey(activeDay)
                 setNoteDraft('')
                 setNotes(current => {
