@@ -69,7 +69,7 @@ export default function LocalServicesPage() {
         description="Find travel agents, car rentals, lawyers, real estate agents, and everyday services near you or at your destination."
       />
       <div className="mx-auto max-w-7xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
-        <div className="space-y-3 rounded-2xl bg-surface p-5 sm:p-6">
+        <div className="space-y-3 rounded-2xl border-4 border-navy bg-surface p-5 sm:p-6">
           <form onSubmit={selectArea} className="flex flex-wrap items-end gap-3">
             <div className="min-w-0 grow">
               <label htmlFor="service-location" className="mb-2 block font-semibold text-navy">
@@ -100,7 +100,7 @@ export default function LocalServicesPage() {
             <h2 className="mb-4 text-2xl font-bold text-navy">{group.title}</h2>
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {group.services.map((service) => (
-                <li key={service.name} className="flex flex-col items-start gap-3 rounded-2xl border border-border p-5">
+                <li key={service.name} className="flex flex-col items-start gap-3 rounded-2xl border-4 border-navy p-5">
                   <h3 className="text-lg font-semibold text-navy">{service.name}</h3>
                   <p className="grow text-sm text-muted-foreground">{service.description}</p>
                   <a href={mapsSearch(service.query, area)} className={secondaryButton}>
