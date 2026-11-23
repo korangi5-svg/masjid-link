@@ -17,26 +17,29 @@ export const navLinks = [
 ].filter((link) => eventsEnabled || link.href !== '/events')
 
 const navButtonColors: Record<string, string> = {
-  '/': 'bg-[#E0F5EC] text-[#12634F] border-[#B0E8D6]',
-  '/masjids': 'bg-[#E1F1FF] text-[#174B78] border-[#B9DAF5]',
-  '/local-services': 'bg-[#DCF7EF] text-[#12634F] border-[#B0E8D6]',
-  '/events': 'bg-[#FFE8EE] text-[#8A2946] border-[#F7C2D1]',
-  '/resources': 'bg-[#FFF1D3] text-[#77500D] border-[#F1D59A]',
-  '/quran-radio': 'bg-[#F6E5FA] text-[#682575] border-[#E2BCEB]',
-  '/islamic-websites': 'bg-[#EFE7FF] text-[#563592] border-[#D9C8FA]',
-  '/daily-learning': 'bg-[#FFECDD] text-[#853D14] border-[#F6CBAB]',
-  '/weekly-quiz': 'bg-[#FFF4CD] text-[#725514] border-[#EBD58C]',
-  '/calendar': 'bg-[#E5ECFF] text-[#314B93] border-[#C6D3F8]',
-  '/about': 'bg-[#E8F3D9] text-[#416022] border-[#CBDFB0]',
-  '/about-me': 'bg-[#E8F3D9] text-[#416022] border-[#CBDFB0]',
-  '/contact': 'bg-[#DFF4F8] text-[#17586B] border-[#B5E1EA]',
+  '/': 'bg-[#E0F5EC] text-[#12634F]',
+  '/masjids': 'bg-[#E1F1FF] text-[#174B78]',
+  '/local-services': 'bg-[#DCF7EF] text-[#12634F]',
+  '/events': 'bg-[#FFE8EE] text-[#8A2946]',
+  '/resources': 'bg-[#FFF1D3] text-[#77500D]',
+  '/quran-radio': 'bg-[#F6E5FA] text-[#682575]',
+  '/islamic-websites': 'bg-[#EFE7FF] text-[#563592]',
+  '/daily-learning': 'bg-[#FFECDD] text-[#853D14]',
+  '/weekly-quiz': 'bg-[#FFF4CD] text-[#725514]',
+  '/calendar': 'bg-[#E5ECFF] text-[#314B93]',
+  '/about': 'bg-[#E8F3D9] text-[#416022]',
+  '/about-me': 'bg-[#E8F3D9] text-[#416022]',
+  '/contact': 'bg-[#DFF4F8] text-[#17586B]',
   '/search': 'bg-[#E1F1FF] text-[#174B78] border-[#B9DAF5]',
   '/notifications': 'bg-[#EFE7FF] text-[#563592] border-[#D9C8FA]',
 }
 
 export function navButtonColor(href: string, active: boolean) {
   const colors = active ? 'border-[#087354] bg-[#087354] text-white' : navButtonColors[href]
-  return href === '/weekly-quiz' ? `${colors} font-bold!` : colors
+  if (href === '/search' || href === '/notifications') return colors
+
+  const tabStyle = `${colors ?? ''} border-[5px] border-navy`
+  return href === '/weekly-quiz' ? `${tabStyle} font-bold!` : tabStyle
 }
 
 export const navButton =
