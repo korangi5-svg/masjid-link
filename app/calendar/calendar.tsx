@@ -386,11 +386,11 @@ export function Calendar({ events, masjidLocations }: {
             ))}
           </div>
         </fieldset>
-        {bounds && <div className="mt-3 grid grid-cols-7 gap-1 rounded-2xl border border-slate-300 bg-slate-100 p-1 sm:gap-2 sm:p-2 dark:border-slate-700 dark:bg-slate-800">
+        {bounds && <div className="mt-3 grid grid-cols-7 gap-1 rounded-2xl border-4 border-neutral-600 bg-slate-100 p-1 sm:gap-2 sm:p-2 dark:bg-slate-800">
           {weekdays.map(({ label, colors }) => (
-            <div key={label} className={`rounded-lg border px-0.5 py-2 text-center text-xs font-bold ${colors}`}>{label}</div>
+            <div key={label} className={`rounded-lg border-4 border-neutral-600! px-0.5 py-2 text-center text-xs font-bold ${colors}`}>{label}</div>
           ))}
-          {Array.from({ length: new Date(bounds.start).getUTCDay() }, (_, index) => <div key={index} className="rounded-lg border border-dashed border-slate-300 dark:border-slate-600" aria-hidden="true" />)}
+          {Array.from({ length: new Date(bounds.start).getUTCDay() }, (_, index) => <div key={index} className="rounded-lg border-4 border-dashed border-neutral-600" aria-hidden="true" />)}
           {days.map(day => {
             const items = displayEntries(day)
             const types = [...new Set(items.map(item => categoryFor(item)))]
@@ -398,7 +398,7 @@ export function Calendar({ events, masjidLocations }: {
               <button type="button" aria-current={day === today ? 'date' : undefined} aria-pressed={day === activeDay}
                 aria-label={`${gregorian.format(day)}${items.length ? ': ' + items.map(item => item.name).join(', ') : ''}`}
                 onClick={() => setSelectedDay(day)}
-                className={`h-full min-h-20 w-full rounded-lg border px-0.5 py-2 text-center transition hover:border-indigo-600 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700 sm:min-h-28 sm:px-2 ${types.length ? tileColors[types[0]].tile : 'border-slate-300 bg-white'} ${day === activeDay ? 'ring-2 ring-inset ring-indigo-700' : ''}`}>
+                className={`h-full min-h-20 w-full rounded-lg border-4 border-neutral-600! px-0.5 py-2 text-center transition hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700 sm:min-h-28 sm:px-2 ${types.length ? tileColors[types[0]].tile : 'border-slate-300 bg-white'} ${day === activeDay ? 'ring-2 ring-inset ring-indigo-700' : ''}`}>
                 <span className={`mx-auto grid size-6 place-items-center rounded-full font-extrabold ${day === today ? 'bg-indigo-800 text-white' : 'text-navy'}`}>{isHijri ? hijriPart(day, offset, 'day') : new Date(day).getUTCDate()}</span>
                 <span className="block truncate text-[10px] text-muted-foreground sm:text-xs">{isHijri ? gregorian.format(day).replace(/,? \d{4}$/, '') : `${hijriPart(day, offset, 'day')} ${hijriPart(day, offset, 'month')}`}</span>
                 {types.map(type => <span key={type} className={`mx-0.5 inline-block rounded-full px-0.5 text-[10px] font-bold sm:px-1 ${tileColors[type].badge}`} aria-hidden="true"><span className="sm:hidden">●</span><span className="hidden sm:inline">{type === 'Note' ? 'Note' : type}</span></span>)}
