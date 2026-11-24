@@ -40,9 +40,9 @@ export function MobileMenu({ pathname }: { pathname: string }) {
         id={menuId}
         aria-label="Mobile"
         hidden={!open}
-        className="absolute inset-x-0 top-full max-h-[calc(100dvh-5rem)] overflow-y-auto border-b border-border bg-white shadow-lg"
+        className="absolute inset-x-0 top-full max-h-[max(6rem,calc(100dvh-11rem))] overscroll-contain overflow-y-auto border-b border-border bg-white shadow-lg"
       >
-        <ul className="mx-auto grid max-w-7xl grid-cols-2 gap-2 px-4 py-3 sm:grid-cols-3 sm:px-6">
+        <ul className="mx-auto grid max-w-7xl grid-cols-1 gap-2 min-[360px]:grid-cols-2 px-4 py-3 sm:grid-cols-3 sm:px-6">
           {navLinks.map((link) => {
             const active = isActive(pathname, link.href)
             return (
@@ -52,7 +52,7 @@ export function MobileMenu({ pathname }: { pathname: string }) {
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     navButton,
-                    'h-full',
+                    'h-full [overflow-wrap:anywhere]',
                     navButtonColor(link.href, active),
                     focusRing,
                   )}
