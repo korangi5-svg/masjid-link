@@ -142,7 +142,7 @@ export function MasjidDirectory({
       <form
         role="search"
         onSubmit={handleSubmit}
-        className="flex flex-col gap-3 rounded-2xl border-[5px] border-navy bg-surface p-4 sm:flex-row sm:flex-wrap sm:items-end lg:flex-nowrap"
+        className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 sm:flex-row sm:flex-wrap sm:items-end lg:flex-nowrap"
       >
         <div className="flex-1 sm:min-w-64">
           <label htmlFor={searchId} className="mb-1.5 block text-sm font-medium text-navy">
@@ -158,7 +158,7 @@ export function MasjidDirectory({
               placeholder="e.g. 123 Main St, Chicago or M5V 3L9"
               maxLength={100}
               enterKeyHint="search"
-              className={cn(inputClass, 'border-[5px] border-navy pl-10')}
+              className={cn(inputClass, 'pl-10')}
             />
           </div>
         </div>
@@ -166,7 +166,7 @@ export function MasjidDirectory({
           <label htmlFor={distanceId} className="mb-1.5 block text-sm font-medium text-navy">
             Distance
           </label>
-          <select id={distanceId} value={distance} disabled={origin?.area && query.trim() === place} onChange={(e) => handleDistanceChange(e.target.value)} className={cn(inputClass, 'border-[5px] border-navy')}>
+          <select id={distanceId} value={distance} disabled={origin?.area && query.trim() === place} onChange={(e) => handleDistanceChange(e.target.value)} className={inputClass}>
             {distanceOptions.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -174,7 +174,7 @@ export function MasjidDirectory({
             ))}
           </select>
         </div>
-        <button type="button" onClick={handleUseLocation} disabled={busy} className={cn(secondaryButton, 'border-[5px] border-navy disabled:opacity-70')}>
+        <button type="button" onClick={handleUseLocation} disabled={busy} className={cn(secondaryButton, 'disabled:opacity-70')}>
           {status === 'locating' ? (
             <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
           ) : (
@@ -227,11 +227,7 @@ export function MasjidDirectory({
 
       {status === 'done' && masjids.length ? (
         <>
-          {prayerTimes ? (
-            <div className="mt-4 [&_button.border]:border-[5px] [&_button.border]:border-navy">
-              <NextPrayerBar times={prayerTimes} coords={origin ?? coords ?? undefined} place={place} className="border-[5px] border-navy" />
-            </div>
-          ) : null}
+          {prayerTimes ? <NextPrayerBar times={prayerTimes} coords={origin ?? coords ?? undefined} place={place} className="mt-4" /> : null}
           <MasjidMap masjids={masjids} origin={origin} className="mt-4 h-80 sm:h-[28rem]" />
           <ul className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {masjids.map((m) => (

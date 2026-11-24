@@ -20,13 +20,13 @@ export default function WeeklyQuizPage() {
         <a className="font-semibold text-navy underline" href="#daily-quiz">Daily Quiz</a>
         <a className="font-semibold text-navy underline" href="#weekly-quiz">Weekly Quiz</a>
       </nav>
-      <section id="daily-quiz" aria-labelledby="daily-quiz-title" className="mb-10 scroll-mt-6 rounded-2xl border-4 border-navy p-4 sm:p-6">
+      <section id="daily-quiz" aria-labelledby="daily-quiz-title" className="mb-10 scroll-mt-6">
         <h2 id="daily-quiz-title" className="text-2xl font-bold text-navy">Daily Quiz</h2>
         <p className="mt-2 text-sm text-muted-foreground"><time dateTime={today}>{quizDateLabel(today)}</time></p>
         <p className="mb-4 mt-2">Four questions covering science, history, math, and Islamic knowledge.</p>
         <DailyQuiz key={today} date={today} />
       </section>
-      <section id="weekly-quiz" aria-labelledby="weekly-quiz-title" className="scroll-mt-6 rounded-2xl border-4 border-navy p-4 sm:p-6">
+      <section id="weekly-quiz" aria-labelledby="weekly-quiz-title" className="scroll-mt-6">
         <h2 id="weekly-quiz-title" className="text-2xl font-bold text-navy">Weekly Quiz</h2>
         {quiz ? (
           <>

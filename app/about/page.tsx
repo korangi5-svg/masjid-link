@@ -55,7 +55,7 @@ export default function AboutPage() {
         <h2 className="mb-6 text-2xl font-bold text-navy">What you can do on Connect to Masjid</h2>
         <ul className="grid gap-6 md:grid-cols-2">
           {guides.filter((guide) => guide.enabled !== false).map(({ icon: Icon, title, body, href, linkLabel }) => (
-            <li key={title} className="flex flex-col items-start rounded-2xl border-4 border-navy bg-white p-7 shadow-sm">
+            <li key={title} className="flex flex-col items-start rounded-2xl border border-border bg-white p-7 shadow-sm">
               <span className="flex size-12 items-center justify-center rounded-full bg-accent text-teal">
                 <Icon className="size-6" aria-hidden="true" />
               </span>

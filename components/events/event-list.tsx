@@ -15,7 +15,7 @@ export function EventList({ events }: { events: CommunityEvent[] }) {
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <fieldset className="rounded-2xl border-4 border-navy p-4">
+      <fieldset>
         <legend className="sr-only">Filter events by category</legend>
         <div className="flex flex-wrap gap-2">
           {categories.map((c) => {
@@ -27,8 +27,8 @@ export function EventList({ events }: { events: CommunityEvent[] }) {
                 aria-pressed={active}
                 onClick={() => setCategory(c)}
                 className={cn(
-                  'rounded-full border-4 border-navy px-4 py-2 text-sm font-semibold transition-colors',
-                  active ? 'bg-navy text-white' : 'bg-white text-navy hover:border-teal hover:text-teal',
+                  'rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
+                  active ? 'border-navy bg-navy text-white' : 'border-border bg-white text-navy hover:border-teal hover:text-teal',
                   focusRing,
                 )}
               >
@@ -52,7 +52,7 @@ export function EventList({ events }: { events: CommunityEvent[] }) {
           ))}
         </ul>
       ) : (
-        <div className="mt-6 flex flex-col items-center rounded-2xl border-4 border-dashed border-navy px-6 py-14 text-center">
+        <div className="mt-6 flex flex-col items-center rounded-2xl border border-dashed border-border px-6 py-14 text-center">
           <CalendarX className="size-10 text-muted-foreground" aria-hidden="true" />
           <h2 className="mt-4 text-lg font-bold text-navy">No events in this category</h2>
           <p className="mt-2 text-sm text-muted-foreground">Check back soon or browse all events.</p>

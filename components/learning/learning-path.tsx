@@ -85,5 +85,5 @@ export function LearningPath() {
 }
 
 export function LearningPathLink() {
-  return <section className="my-6 rounded-2xl border border-border bg-surface p-6"><p className="text-sm font-semibold text-teal-dark">A guided foundation</p><h2 className="mt-2 text-2xl font-bold text-navy">New Muslim Path</h2><p className="my-3">Shahadah → Salah → Wudu → Quran Basics. Save your progress and unlock each next step.</p><Link href="/learning-path" className={`${secondaryButton} inset-ring-3 inset-ring-navy`}>Open learning path</Link></section>
+  return <section className="my-6 rounded-2xl border border-border bg-surface p-6"><p className="text-sm font-semibold text-teal-dark">A guided foundation</p><h2 className="mt-2 text-2xl font-bold text-navy">New Muslim Path</h2><p className="my-3">Shahadah → Salah → Wudu → Quran Basics. Save your progress and unlock each next step.</p><Link href="/learning-path" className={secondaryButton}>Open learning path</Link></section>
 }

@@ -9,10 +9,6 @@ import { DAILY_PRAYERS, formatCountdown, getNextPrayer } from '@/lib/prayer'
 import type { CommunityEvent, PrayerTimes } from '@/lib/types'
 import { inputClass, secondaryButton } from '@/lib/site'
 
-const calendarControlBorder = 'border-4! border-neutral-600!'
-const calendarInput = `${inputClass} ${calendarControlBorder}`
-const calendarButton = `${secondaryButton} ${calendarControlBorder}`
-
 const weekdays = [
   { label: 'Sun', colors: 'border-rose-400 bg-rose-200 text-rose-950' },
   { label: 'Mon', colors: 'border-sky-400 bg-sky-200 text-sky-950' },
@@ -312,32 +308,32 @@ export function Calendar({ events, masjidLocations }: {
 
   return (
     <div className={'mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8 ' + (darkMode ? 'dark calendar-dark' : '')}>
-      <section className="relative overflow-hidden rounded-3xl border-4 border-navy bg-linear-to-br from-[#102856] via-[#233773] to-[#075b62] px-5 py-8 text-white shadow-lg sm:p-10">
+      <section className="relative overflow-hidden rounded-3xl border border-indigo-900 bg-linear-to-br from-[#102856] via-[#233773] to-[#075b62] px-5 py-8 text-white shadow-lg sm:p-10">
         <GeometricPattern className="pointer-events-none absolute -right-10 -top-12 size-80 text-white/10" />
         <div className="relative">
           <h1 className="text-sm font-semibold uppercase tracking-widest text-mint">Hijri &amp; Gregorian Calendar</h1>
           <p className="mt-3 text-3xl font-extrabold sm:text-5xl">{today === null ? 'Loading date…' : hijri.format(today + offset * DAY)}</p>
           {today !== null && <p className="mt-2 text-white/80">{gregorian.format(today)} · {place?.label ?? 'Selected time zone'}</p>}
           <dl className="mt-8 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border-4 border-navy bg-sky-300/15 p-4"><dt className="text-sm text-white/90">Local time</dt><dd className="mt-1 font-semibold tabular-nums">{localTime ?? '—'}</dd></div>
-            <div className="rounded-2xl border-4 border-navy bg-emerald-300/15 p-4"><dt className="text-sm text-white/90">Next prayer</dt><dd className="mt-1 font-semibold">{nextPrayer ? `${nextPrayer.label} · ${formatCountdown(nextPrayer.minutesUntil)}` : '—'}</dd></div>
-            <div className="rounded-2xl border-4 border-navy bg-amber-300/15 p-4"><dt className="text-sm text-white/90">Next Islamic observance</dt><dd className="mt-1 font-semibold">{upcoming[0] ? `${upcoming[0].title} · ${gregorian.format(upcoming[0].date)}` : '—'}</dd></div>
+            <div className="rounded-2xl border border-sky-300/40 bg-sky-300/15 p-4"><dt className="text-sm text-white/90">Local time</dt><dd className="mt-1 font-semibold tabular-nums">{localTime ?? '—'}</dd></div>
+            <div className="rounded-2xl border border-emerald-300/40 bg-emerald-300/15 p-4"><dt className="text-sm text-white/90">Next prayer</dt><dd className="mt-1 font-semibold">{nextPrayer ? `${nextPrayer.label} · ${formatCountdown(nextPrayer.minutesUntil)}` : '—'}</dd></div>
+            <div className="rounded-2xl border border-amber-300/40 bg-amber-300/15 p-4"><dt className="text-sm text-white/90">Next Islamic observance</dt><dd className="mt-1 font-semibold">{upcoming[0] ? `${upcoming[0].title} · ${gregorian.format(upcoming[0].date)}` : '—'}</dd></div>
           </dl>
         </div>
       </section>
 
-      <section className="rounded-3xl border-4 border-navy bg-white p-3 shadow-lg shadow-slate-200/60 sm:p-7 dark:bg-slate-900" aria-labelledby="calendar-month">
+      <section className="rounded-3xl border border-slate-300 bg-white p-3 shadow-lg shadow-slate-200/60 sm:p-7 dark:border-slate-700 dark:bg-slate-900" aria-labelledby="calendar-month">
         <form onSubmit={selectCity} className="flex flex-wrap items-end gap-3">
           <label className="min-w-0 flex-1 basis-48 font-semibold">City
-            <input className={calendarInput} value={city} onChange={event => setCity(event.target.value)}
+            <input className={inputClass} value={city} onChange={event => setCity(event.target.value)}
               placeholder="Toronto, Canada" required maxLength={120} disabled={searching} />
           </label>
-          <button className={calendarButton} type="submit" disabled={searching}>{searching ? 'Finding city…' : 'Set city'}</button>
+          <button className={secondaryButton} type="submit" disabled={searching}>{searching ? 'Finding city…' : 'Set city'}</button>
         </form>
         {cityError && <p role="alert" className="mt-2 text-sm text-destructive">{cityError}</p>}
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <label className="font-semibold">Location time zone
-            <select className={calendarInput} value={zone} disabled={searching} onChange={event => {
+            <select className={inputClass} value={zone} disabled={searching} onChange={event => {
               setZone(event.target.value); setPlace(null); setCityError(''); setAnchor(null); setSelectedDay(null)
             }}>
               <option value="">Device time zone</option>
@@ -346,55 +342,55 @@ export function Calendar({ events, masjidLocations }: {
             </select>
           </label>
           <label className="font-semibold">Hijri date adjustment
-            <select className={calendarInput} value={offset} onChange={event => { setOffset(Number(event.target.value)); setAnchor(null); setSelectedDay(null) }}>
+            <select className={inputClass} value={offset} onChange={event => { setOffset(Number(event.target.value)); setAnchor(null); setSelectedDay(null) }}>
               <option value={0}>Umm al-Qura date</option><option value={-1}>One day earlier</option><option value={1}>One day later</option>
             </select>
           </label>
         </div>
         <div className="mt-6 flex flex-wrap gap-2" aria-label="Calendar view">
-          <button type="button" className={`${calendarButton} aria-pressed:bg-indigo-800 aria-pressed:text-white`} aria-pressed={isHijri} onClick={() => setIsHijri(true)}>Hijri month</button>
-          <button type="button" className={`${calendarButton} aria-pressed:bg-indigo-800 aria-pressed:text-white`} aria-pressed={!isHijri} onClick={() => setIsHijri(false)}>Gregorian month</button>
-          <button type="button" className={calendarButton + ' ml-auto'} aria-pressed={darkMode} aria-label={'Switch to ' + (darkMode ? 'light mode' : 'dark mode')} onClick={() => setDarkMode(value => !value)}>{darkMode ? 'Light mode' : 'Dark mode'}</button>
+          <button type="button" className={`${secondaryButton} aria-pressed:border-indigo-800 aria-pressed:bg-indigo-800 aria-pressed:text-white`} aria-pressed={isHijri} onClick={() => setIsHijri(true)}>Hijri month</button>
+          <button type="button" className={`${secondaryButton} aria-pressed:border-indigo-800 aria-pressed:bg-indigo-800 aria-pressed:text-white`} aria-pressed={!isHijri} onClick={() => setIsHijri(false)}>Gregorian month</button>
+          <button type="button" className={secondaryButton + ' ml-auto'} aria-pressed={darkMode} aria-label={'Switch to ' + (darkMode ? 'light mode' : 'dark mode')} onClick={() => setDarkMode(value => !value)}>{darkMode ? 'Light mode' : 'Dark mode'}</button>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <h2 id="calendar-month" className="text-2xl font-bold text-navy" aria-live="polite">{title}</h2>
           {!isHijri && bounds && <div className="flex gap-2">
             <label className="sr-only" htmlFor="calendar-month-select">Calendar month</label>
-            <select id="calendar-month-select" aria-label="Calendar month" className={calendarInput + ' w-36'} value={calendarMonth} onChange={event => { setAnchor(Date.UTC(calendarYear, Number(event.target.value), 1)); setSelectedDay(null) }}>
+            <select id="calendar-month-select" aria-label="Calendar month" className={inputClass + ' w-36'} value={calendarMonth} onChange={event => { setAnchor(Date.UTC(calendarYear, Number(event.target.value), 1)); setSelectedDay(null) }}>
               {gregorianMonths.map((month, index) => <option key={month} value={index}>{month}</option>)}
             </select>
             <label className="sr-only" htmlFor="calendar-year-select">Calendar year</label>
-            <select id="calendar-year-select" aria-label="Calendar year" className={calendarInput + ' w-24'} value={calendarYear} onChange={event => { setAnchor(Date.UTC(Number(event.target.value), calendarMonth, 1)); setSelectedDay(null) }}>
+            <select id="calendar-year-select" aria-label="Calendar year" className={inputClass + ' w-24'} value={calendarYear} onChange={event => { setAnchor(Date.UTC(Number(event.target.value), calendarMonth, 1)); setSelectedDay(null) }}>
               {yearOptions.map(year => <option key={year} value={year}>{year}</option>)}
             </select>
           </div>}
           {bounds && <div className="flex flex-wrap gap-2">
-            <button className={calendarButton} onClick={() => { setAnchor(bounds.start - DAY); setSelectedDay(null) }}>Previous</button>
-            <button className={calendarButton} onClick={() => { setAnchor(null); setSelectedDay(null) }}>Today</button>
-            <button className={calendarButton} onClick={() => { setAnchor(bounds.end); setSelectedDay(null) }}>Next</button>
+            <button className={secondaryButton} onClick={() => { setAnchor(bounds.start - DAY); setSelectedDay(null) }}>Previous</button>
+            <button className={secondaryButton} onClick={() => { setAnchor(null); setSelectedDay(null) }}>Today</button>
+            <button className={secondaryButton} onClick={() => { setAnchor(bounds.end); setSelectedDay(null) }}>Next</button>
           </div>}
         </div>
         <ul aria-label="Calendar legend" className="mt-4 flex flex-wrap gap-2">
           {Object.values(tileColors).map(({ label, tile, badge }) => (
-            <li key={label} className={`rounded-full border-4 border-neutral-600! px-2.5 py-1 text-xs font-bold ${tile} ${badge}`}>{label}</li>
+            <li key={label} className={`rounded-full border px-2.5 py-1 text-xs font-bold ${tile} ${badge}`}>{label}</li>
           ))}
         </ul>
         <fieldset className="mt-3">
           <legend className="mb-2 text-sm font-semibold text-navy">Show on calendar</legend>
           <div className="flex flex-wrap gap-2">
             {filterOptions.map(({ key, label }) => (
-              <label key={key} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border-4 border-neutral-600 bg-white px-3 py-2 text-sm font-semibold text-navy dark:bg-slate-900 dark:text-slate-100">
+              <label key={key} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-navy dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
                 <input type="checkbox" className="size-4 accent-emerald-600" checked={filters[key]} onChange={() => setFilters(current => ({ ...current, [key]: !current[key] }))} />
                 {label}
               </label>
             ))}
           </div>
         </fieldset>
-        {bounds && <div className="mt-3 grid grid-cols-7 gap-1 rounded-2xl border-4 border-neutral-600 bg-slate-100 p-1 sm:gap-2 sm:p-2 dark:bg-slate-800">
+        {bounds && <div className="mt-3 grid grid-cols-7 gap-1 rounded-2xl border border-slate-300 bg-slate-100 p-1 sm:gap-2 sm:p-2 dark:border-slate-700 dark:bg-slate-800">
           {weekdays.map(({ label, colors }) => (
-            <div key={label} className={`rounded-lg border-4 border-neutral-600! px-0.5 py-2 text-center text-xs font-bold ${colors}`}>{label}</div>
+            <div key={label} className={`rounded-lg border px-0.5 py-2 text-center text-xs font-bold ${colors}`}>{label}</div>
           ))}
-          {Array.from({ length: new Date(bounds.start).getUTCDay() }, (_, index) => <div key={index} className="rounded-lg border-4 border-dashed border-neutral-600" aria-hidden="true" />)}
+          {Array.from({ length: new Date(bounds.start).getUTCDay() }, (_, index) => <div key={index} className="rounded-lg border border-dashed border-slate-300 dark:border-slate-600" aria-hidden="true" />)}
           {days.map(day => {
             const items = displayEntries(day)
             const types = [...new Set(items.map(item => categoryFor(item)))]
@@ -402,7 +398,7 @@ export function Calendar({ events, masjidLocations }: {
               <button type="button" aria-current={day === today ? 'date' : undefined} aria-pressed={day === activeDay}
                 aria-label={`${gregorian.format(day)}${items.length ? ': ' + items.map(item => item.name).join(', ') : ''}`}
                 onClick={() => setSelectedDay(day)}
-                className={`h-full min-h-20 w-full rounded-lg border-4 border-neutral-600! px-0.5 py-2 text-center transition hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700 sm:min-h-28 sm:px-2 ${types.length ? tileColors[types[0]].tile : 'border-slate-300 bg-white'} ${day === activeDay ? 'ring-2 ring-inset ring-indigo-700' : ''}`}>
+                className={`h-full min-h-20 w-full rounded-lg border px-0.5 py-2 text-center transition hover:border-indigo-600 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700 sm:min-h-28 sm:px-2 ${types.length ? tileColors[types[0]].tile : 'border-slate-300 bg-white'} ${day === activeDay ? 'ring-2 ring-inset ring-indigo-700' : ''}`}>
                 <span className={`mx-auto grid size-6 place-items-center rounded-full font-extrabold ${day === today ? 'bg-indigo-800 text-white' : 'text-navy'}`}>{isHijri ? hijriPart(day, offset, 'day') : new Date(day).getUTCDate()}</span>
                 <span className="block truncate text-[10px] text-muted-foreground sm:text-xs">{isHijri ? gregorian.format(day).replace(/,? \d{4}$/, '') : `${hijriPart(day, offset, 'day')} ${hijriPart(day, offset, 'month')}`}</span>
                 {types.map(type => <span key={type} className={`mx-0.5 inline-block rounded-full px-0.5 text-[10px] font-bold sm:px-1 ${tileColors[type].badge}`} aria-hidden="true"><span className="sm:hidden">●</span><span className="hidden sm:inline">{type === 'Note' ? 'Note' : type}</span></span>)}
@@ -411,24 +407,24 @@ export function Calendar({ events, masjidLocations }: {
             </div>
           })}
         </div>}
-        {activeDay !== undefined && <div className="mt-4 rounded-xl border-4 border-navy bg-indigo-50 p-4 dark:bg-indigo-950/50" aria-live="polite">
+        {activeDay !== undefined && <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/50" aria-live="polite">
           <h3 className="font-bold text-navy">{gregorian.format(activeDay)} · {hijri.format(activeDay + offset * DAY)}</h3>
           {entries(activeDay).length ? <ul className="mt-2 space-y-2 text-sm">{entries(activeDay).map((item, index) => <li key={index}>
             <span className="font-semibold text-navy">{'href' in item && typeof item.href === 'string' ? <Link href={item.href} className="underline">{item.name}</Link> : item.name}</span>
             <span className="text-muted-foreground"> · {item.type}{item.detail ? ` · ${item.detail}` : ''}</span>
           </li>)}</ul> : <p className="mt-1 text-sm text-muted-foreground">No events or holidays listed for this date.</p>}
-          <div className="mt-4 border-t-4 border-neutral-600 pt-4">
+          <div className="mt-4 border-t border-indigo-200 pt-4">
             <div className="flex items-center justify-between gap-2"><label htmlFor={`calendar-note-${dateKey(activeDay)}`} className="font-semibold text-navy">Personal notes &amp; reminders</label><span className="text-xs text-muted-foreground">{noteDraft.length}/250</span></div>
             <textarea
               id={`calendar-note-${dateKey(activeDay)}`}
-              className={`${calendarInput} mt-2 min-h-24 resize-y`}
+              className={`${inputClass} mt-2 min-h-24 resize-y`}
               value={noteDraft}
               onChange={event => setNoteDraft(event.target.value)}
               maxLength={250}
               placeholder="Add a personal note or reminder for this day…"
             />
             <div className="mt-2 flex flex-wrap gap-2">
-              <button type="button" className={calendarButton} onClick={() => {
+              <button type="button" className={secondaryButton} onClick={() => {
                 const key = dateKey(activeDay)
                 const value = noteDraft.trim()
                 setNotes(current => {
@@ -438,7 +434,7 @@ export function Calendar({ events, masjidLocations }: {
                   return updated
                 })
               }}>Save note</button>
-              {notes[dateKey(activeDay)] && <button type="button" className={calendarButton} onClick={() => {
+              {notes[dateKey(activeDay)] && <button type="button" className={secondaryButton} onClick={() => {
                 const key = dateKey(activeDay)
                 setNoteDraft('')
                 setNotes(current => {
@@ -467,7 +463,7 @@ export function Calendar({ events, masjidLocations }: {
       {filters.Islamic && <section aria-labelledby="islamic-events">
         <h2 id="islamic-events" className="text-2xl font-bold text-navy">Upcoming Islamic observances</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {upcoming.map(item => <article key={item.date} className="overflow-hidden rounded-2xl border-4 border-navy bg-emerald-50 shadow-sm dark:bg-emerald-950/40">
+          {upcoming.map(item => <article key={item.date} className="overflow-hidden rounded-2xl border border-emerald-300 bg-emerald-50 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/40">
             <Image src="/images/hero-mosque.png" alt="" width={640} height={240} className="h-28 w-full object-cover" />
             <div className="p-5">
               <time dateTime={dateKey(item.date)} className="text-sm font-semibold text-teal-dark">{gregorian.format(item.date)}</time>
@@ -478,9 +474,9 @@ export function Calendar({ events, masjidLocations }: {
         </div>
       </section>}
 
-      {filters.Masjid && <section aria-labelledby="community-events" className="rounded-2xl border-4 border-navy bg-violet-50 p-5 sm:p-7 dark:bg-violet-950/40">
+      {filters.Masjid && <section aria-labelledby="community-events" className="rounded-2xl border border-violet-300 bg-violet-50 p-5 sm:p-7 dark:border-violet-800 dark:bg-violet-950/40">
         <h2 id="community-events" className="text-2xl font-bold text-navy">Community events{place?.city ? ` near ${place.city}` : ''}</h2>
-        {upcomingCommunity.length ? <ul className="mt-4 grid gap-4 sm:grid-cols-2">{upcomingCommunity.map(event => <li key={event.id} className="rounded-xl border-4 border-navy bg-surface p-4">
+        {upcomingCommunity.length ? <ul className="mt-4 grid gap-4 sm:grid-cols-2">{upcomingCommunity.map(event => <li key={event.id} className="rounded-xl bg-surface p-4">
           <Link href={`/events/${event.id}`} className="font-bold text-navy underline">{event.title}</Link>
           <p className="mt-1 text-sm text-muted-foreground">{gregorian.format(new Date(event.date))} · {event.startTime} · {event.location}</p>
           <p className="mt-2 text-sm text-muted-foreground">{event.description}</p>
@@ -488,9 +484,9 @@ export function Calendar({ events, masjidLocations }: {
         {place && <Link className="mt-4 inline-block font-semibold text-teal-dark underline" href={`/masjids?lat=${place.lat}&lng=${place.lng}&near=${encodeURIComponent(place.label)}`}>Find nearby masjids</Link>}
       </section>}
 
-      <section aria-labelledby="calendar-prayers" className="rounded-2xl border-4 border-navy bg-sky-50 p-5 sm:p-7 dark:bg-sky-950/40">
+      <section aria-labelledby="calendar-prayers" className="rounded-2xl border border-sky-300 bg-sky-50 p-5 sm:p-7 dark:border-sky-800 dark:bg-sky-950/40">
         <h2 id="calendar-prayers" className="text-2xl font-bold text-navy">Today’s prayer times</h2>
-        {times ? <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">{DAILY_PRAYERS.map(prayer => <div key={prayer.key} className={`rounded-xl border-4 border-neutral-600 p-3 text-center ${nextPrayer?.key === prayer.key ? 'bg-indigo-800 text-white' : 'bg-white text-navy'}`}>
+        {times ? <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">{DAILY_PRAYERS.map(prayer => <div key={prayer.key} className={`rounded-xl border p-3 text-center ${nextPrayer?.key === prayer.key ? 'border-indigo-900 bg-indigo-800 text-white' : 'border-sky-300 bg-white text-navy'}`}>
           <dt className="text-sm font-semibold">{prayer.label}</dt><dd className="mt-1 font-bold tabular-nums">{times[prayer.key]}</dd>
         </div>)}</dl> : <p className="mt-2 text-sm text-muted-foreground">{!place ? 'Set a city to see prayer times.' : prayers?.key === prayerKey ? 'Prayer times are temporarily unavailable.' : 'Loading prayer times…'}</p>}
         <p className="mt-3 text-xs text-muted-foreground">Calculated for the selected city. Check your masjid for congregation times.</p>

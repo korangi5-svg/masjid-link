@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { Mic, Square, Volume2 } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { inputClass, primaryButton, secondaryButton } from '@/lib/site'
-import { cn } from '@/lib/utils'
 
 import { locales, scriptLanguage, unavailable, type Language } from '@/lib/assistant-language'
 import type { AssistantContext } from '@/lib/services/assistant-ai'
@@ -368,7 +367,7 @@ export function Assistant({ serverDictation }: { serverDictation: boolean }) {
           {local ? 'City or postal code' : 'Question about Islam or Connect to Masjid'}
         </label>
         <div className="flex items-center gap-2">
-          <input id="assistant-input" className={cn(inputClass, "border-4 border-navy focus:border-navy")} value={text} readOnly={listening} dir="auto" onChange={event => setText(event.target.value)}
+          <input id="assistant-input" className={inputClass} value={text} readOnly={listening} dir="auto" onChange={event => setText(event.target.value)}
             placeholder={local ? 'Toronto, Ontario' : 'What is wudu?'} maxLength={local ? 100 : 500} required />
           {!local && (
             <button type="button" className={cn(primaryButton, "shrink-0 px-4 font-bold")} onClick={toggleVoice}
