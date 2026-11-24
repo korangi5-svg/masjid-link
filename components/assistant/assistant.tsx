@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { inputClass, primaryButton, secondaryButton } from '@/lib/site'
 
 import { locales, scriptLanguage, unavailable, type Language } from '@/lib/assistant-language'
+import { cn } from '@/lib/utils'
 import type { AssistantContext } from '@/lib/services/assistant-ai'
 
 type Mode = 'local' | 'question'
