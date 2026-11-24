@@ -30,10 +30,10 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b-[3px] border-[#234D72] bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-20 max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2 sm:flex-nowrap sm:px-6 lg:px-8">
         <Logo />
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2 sm:shrink-0">
           <div className="flex items-center gap-2 xl:hidden">{searchAndNotifications}</div>
           {accountsEnabled ? <AccountMenu /> : null}
           <MobileMenu pathname={pathname} />
