@@ -79,6 +79,18 @@
     @apply bg-background text-foreground font-sans;
     overflow-x: hidden;
   }
+  @media (width < 40rem) {
+    main {
+      overflow-wrap: anywhere;
+    }
+    iframe, video, canvas {
+      max-inline-size: 100%;
+    }
+    pre {
+      max-inline-size: 100%;
+      overflow-x: auto;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
