@@ -70,8 +70,8 @@ export default function LocalServicesPage() {
       />
       <div className="mx-auto max-w-7xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
         <div className="space-y-3 rounded-2xl bg-surface p-5 sm:p-6">
-          <form onSubmit={selectArea} className="flex flex-wrap items-end gap-3">
-            <div className="min-w-0 grow">
+          <form onSubmit={selectArea} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="w-full min-w-0 grow sm:w-auto sm:basis-64">
               <label htmlFor="service-location" className="mb-2 block font-semibold text-navy">
                 City, address, postal code, or airport
               </label>
