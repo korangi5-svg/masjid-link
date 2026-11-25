@@ -399,10 +399,11 @@ function photonType(value?: string): OsmElementType {
 export function findMosquesInBoundary(relationId: number) {
   return cacheGetOrSet(`mosques:boundary:${relationId}`, NEARBY_TTL_MS, async () => {
     const areaId = 3600000000 + relationId
-    const elements = await runOverpass(`
+    const elements = await withDeadline(runOverpass(`
 [out:json][timeout:20];
 nwr["amenity"="place_of_worship"]["religion"="muslim"](area:${areaId});
-out center tags;`.trim(), 25000)
+out center tags;`.trim(), 25000), OVERPASS_DEADLINE_MS)
+    if (elements === TIMED_OUT) throw new HttpError('Boundary lookup timed out')
     return dedupe(elements.map(mapElement).filter((masjid): masjid is OsmMasjid => Boolean(masjid)))
   })
 }
