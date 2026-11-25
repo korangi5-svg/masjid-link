@@ -43,12 +43,12 @@ export async function searchMasjidsNearby({
 }: NearbySearchInput): Promise<NearbySearchResult> {
   const origin = await resolveOrigin(location, lat, lng)
   const radius = Math.min(Math.max(radiusKm, 1), 50)
-  const { boundaryId } = origin
-  const curated = !boundaryId || boundaryId === TORONTO_BOUNDARY_ID ? torontoMasjids : []
-  const [mosques, prayerTimes] = await Promise.all([
-    boundaryId ? findMosquesInBoundary(boundaryId) : findMosquesNearby(origin.lat, origin.lng, radius),
+  const [directory, prayerTimes] = await Promise.all([
+    findDirectoryMatches(origin, radius),
     getPrayerTimes(origin.lat, origin.lng).catch(() => DEFAULT_PRAYER_TIMES),
   ])
+  const { mosques, boundaryId } = directory
+  const curated = !boundaryId || boundaryId === TORONTO_BOUNDARY_ID ? torontoMasjids : []
 
   return {
     origin: { lat: origin.lat, lng: origin.lng, label: origin.label ? shortLabel(origin.label) : undefined, area: Boolean(boundaryId) },
@@ -61,6 +61,15 @@ export async function searchMasjidsNearby({
       .sort((a, b) => a.distanceKm - b.distanceKm)
       .slice(0, boundaryId ? undefined : 40),
   }
+}
+
+async function findDirectoryMatches(origin: { lat: number; lng: number; boundaryId?: number }, radius: number) {
+  const { lat, lng, boundaryId } = origin
+  if (boundaryId) {
+    const mosques = await findMosquesInBoundary(boundaryId).catch(() => null)
+    if (mosques?.length) return { mosques, boundaryId }
+  }
+  return { mosques: await findMosquesNearby(lat, lng, radius), boundaryId: undefined }
 }
 
 export async function getMasjidById(id: string, origin?: { lat: number; lng: number }): Promise<Masjid | null> {
