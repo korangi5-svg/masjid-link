@@ -66,9 +66,12 @@ export async function geocodeLocation(query: string): Promise<GeoPoint | null> {
   const trimmed = query.trim().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ', ')
   if (!trimmed) return null
   const postal = /^([a-z]\d[a-z])[\s-]*(\d[a-z]\d)$/i.exec(trimmed)
+  const zip = /^(\d{5})(?:[ -]?\d{4})?(?:,? (?:US|USA|United States))?$/i.exec(trimmed)
+  const postalCountry = postal ? 'CA' : zip ? 'US' : undefined
   const province = /^([^,\d]+?)(?:, | )([a-z]{2})(, Canada)?$/i.exec(trimmed)
   const provinceName = province && provinceNames[province[2].toUpperCase()]
   const location = postal ? (postal[1] + ' ' + postal[2]).toUpperCase()
+    : zip ? zip[1]
     : province && provinceName && (province[2] === province[2].toUpperCase() || trimmed.includes(',') || province[3])
       ? [province[1], provinceName, 'Canada'].join(', ')
       : trimmed
@@ -77,13 +80,14 @@ export async function geocodeLocation(query: string): Promise<GeoPoint | null> {
     return { lat: 43.65348, lng: -79.38393, label: 'Toronto, Ontario, Canada', city: 'Toronto', province: 'Ontario', countryCode: 'CA', postalCode: '', boundaryId: TORONTO_BOUNDARY_ID }
   }
 
-  const key = 'geocode:v4:' + location.toLowerCase()
+  const key = 'geocode:v5:' + location.toLowerCase()
   return cacheGetOrSet(key, GEOCODE_TTL_MS, async () => {
-    const osm = await geocodeNominatim(location, Boolean(postal)).catch(() => null)
+    const osm = await geocodeNominatim(location, postalCountry).catch(() => null)
     if (osm) return osm
-    const photon = await geocodePhoton(location, Boolean(postal)).catch(() => null)
+    const photon = await geocodePhoton(location, postalCountry).catch(() => null)
     if (photon) return photon
-    return postal ? geocodePostalArea(location.slice(0, 3)) : null
+    if (postal) return geocodePostalArea(location.slice(0, 3), 'CA')
+    return zip ? geocodePostalArea(location, 'US') : null
   })
 }
 
@@ -96,33 +100,34 @@ interface PostalAreaResponse {
   }>
 }
 
-async function geocodePostalArea(prefix: string): Promise<GeoPoint | null> {
+async function geocodePostalArea(code: string, country: 'CA' | 'US'): Promise<GeoPoint | null> {
   try {
-    const data = await fetchJson<PostalAreaResponse>('https://api.zippopotam.us/CA/' + prefix, { timeoutMs: 4000 })
+    const data = await fetchJson<PostalAreaResponse>(`https://api.zippopotam.us/${country}/${code}`, { timeoutMs: 4000 })
     const place = data.places?.find((item) => isValidCoord(Number(item.latitude), Number(item.longitude)))
     if (!place) return null
+    const area = country === 'CA' ? `${code} postal area (approximate)` : `ZIP ${code} area`
     return {
       lat: Number(place.latitude), lng: Number(place.longitude),
-      label: [prefix + ' postal area (approximate)', place['place name'], place.state, 'Canada'].filter(Boolean).join(', '),
-      city: place['place name'], province: place.state, countryCode: 'CA', postalCode: prefix,
+      label: [area, place['place name'], place.state, country === 'CA' ? 'Canada' : 'United States'].filter(Boolean).join(', '),
+      city: place['place name'], province: place.state, countryCode: country, postalCode: code,
     }
   } catch {
     return null
   }
 }
 
-async function geocodeNominatim(query: string, postal: boolean): Promise<GeoPoint | null> {
+async function geocodeNominatim(query: string, postal?: 'CA' | 'US'): Promise<GeoPoint | null> {
   try {
     const params = new URLSearchParams({ format: 'jsonv2', limit: '8', addressdetails: '1' })
     if (postal) {
       params.set('postalcode', query)
-      params.set('countrycodes', 'ca')
+      params.set('countrycodes', postal.toLowerCase())
     } else {
       params.set('q', query)
     }
     const url = `https://nominatim.openstreetmap.org/search?${params}`
     const hits = await fetchJson<NominatimHit[]>(url, { timeoutMs: postal ? 4000 : 8000 })
-    const candidates = postal ? hits.filter((hit) => hit.address?.country_code?.toUpperCase() === 'CA' &&
+    const candidates = postal ? hits.filter((hit) => hit.address?.country_code?.toUpperCase() === postal &&
       normalizeLocation(hit.address?.postcode ?? '') === normalizeLocation(query)) : hits
     const namedBoundaries = postal ? [] : candidates.filter((hit) => boundaryId(hit) &&
       normalizeLocation(hit.display_name?.split(',')[0] ?? '').replace(/ (district|town)$/, '') ===
@@ -147,12 +152,12 @@ async function geocodeNominatim(query: string, postal: boolean): Promise<GeoPoin
   }
 }
 
-async function geocodePhoton(query: string, postal: boolean): Promise<GeoPoint | null> {
+async function geocodePhoton(query: string, postal?: 'CA' | 'US'): Promise<GeoPoint | null> {
   try {
     const url = `https://photon.komoot.io/api/?limit=8&q=${encodeURIComponent(query)}`
     const body = await fetchJson<PhotonResponse>(url, { timeoutMs: postal ? 4000 : 8000 })
     const candidates = postal ? (body.features ?? []).filter(({ properties }) =>
-      properties?.countrycode?.toUpperCase() === 'CA' &&
+      properties?.countrycode?.toUpperCase() === postal &&
       normalizeLocation(properties?.postcode ?? '') === normalizeLocation(query)) : body.features ?? []
     const namedPlaces = postal ? [] : candidates.filter(({ properties }) =>
       properties?.name && !properties.street && !properties.housenumber &&
