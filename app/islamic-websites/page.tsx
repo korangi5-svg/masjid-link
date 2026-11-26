@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 
 const websites = [
   { name: 'Quran.com', href: 'https://quran.com/', description: 'Read the Quran with translations, tafsir, and audio recitations.' },
+  { name: 'Tafheem Ul Quran Full', href: 'https://www.youtube.com/c/TafheemUlQuranFull', description: 'Watch Tafheem Ul Quran Full on YouTube.' },
   { name: 'Sunnah.com', href: 'https://sunnah.com/', description: 'Search hadith collections and find daily duas.' },
   { name: 'Yaqeen Institute', href: 'https://yaqeeninstitute.org/', description: 'Browse articles, lectures, and research on Islam.' },
   { name: 'Dr. Israr Ahmad', href: 'https://www.drisrar.com/', description: 'Explore Quran tafsir, hadith lessons, and lectures in Urdu and English.' },
